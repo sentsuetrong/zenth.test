@@ -29,7 +29,7 @@ class AddUserDetailToUsersTable extends Migration
         'job_position_name' => [
             'type' => 'VARCHAR',
             'constraint' => 100,
-            'comment' => 'สำหรับกรอกชื่อตำแหน่งอื่น สำหรับตำแหน่งประเภทลูกจ้างชั่วคราว/ประจำ/เหมาบริการ',
+            'comment' => 'สำหรับกรอกชื่อตำแหน่งอื่น เช่นตำแหน่งประเภทลูกจ้างชั่วคราว/ประจำ/เหมาบริการ',
             'null' => true,
         ],
         'subdivision_id' => [
@@ -78,14 +78,14 @@ class AddUserDetailToUsersTable extends Migration
             ],
         ]);
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('subdivisions');
+        $this->forge->createTable('subdivisions', true);
         $this->db->table('subdivisions')->insertBatch([
-            ['subdivision_name' => 'ภารกิจอำนวยการ'],
-            ['subdivision_name' => 'กฎหมายและคดี'],
-            ['subdivision_name' => 'นิติกรรมและสัญญา'],
-            ['subdivision_name' => 'พัฒนาและปรับปรุงกฎหมาย'],
-            ['subdivision_name' => 'ระงับข้อพิพาททางการแพทย์'],
-            ['subdivision_name' => 'พัฒนาวิชาการและแผนงาน'],
+            ['subdivision_name' => 'ภารกิจอำนวยการ', 'subdivision_en_name' => 'Administration Subdivision'],
+            ['subdivision_name' => 'กฎหมายและคดี', 'subdivision_en_name' => 'Legal and Litigation Subdivision'],
+            ['subdivision_name' => 'นิติกรรมและสัญญา', 'subdivision_en_name' => 'Juristic Act and Contract Subdivision'],
+            ['subdivision_name' => 'พัฒนาและปรับปรุงกฎหมาย', 'subdivision_en_name' => 'Legal Development and Improvement Subdivision'],
+            ['subdivision_name' => 'ระงับข้อพิพาททางการแพทย์', 'subdivision_en_name' => 'Medical Dispute Resolution Subdivision'],
+            ['subdivision_name' => 'พัฒนาวิชาการและแผนงาน', 'subdivision_en_name' => 'Academic and Plan Development Subdivision'],
         ]);
 
         /**
@@ -119,7 +119,7 @@ class AddUserDetailToUsersTable extends Migration
             ],
         ]);
         $this->forge->addPrimaryKey('id');
-        $this->forge->createTable('job_positions_types');
+        $this->forge->createTable('job_positions_types', true);
         $this->db->table('job_positions_types')->insertBatch([
             ['job_position_type_name' => 'บริหาร', 'job_position_type_en_name' => 'Executive Positions (S)'],
             ['job_position_type_name' => 'อำนวยการ', 'job_position_type_en_name' => 'Managerial Positions (M)'],
@@ -164,7 +164,7 @@ class AddUserDetailToUsersTable extends Migration
         ]);
         $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('job_position_type_id', 'job_positions_types', 'id');
-        $this->forge->createTable('job_positions_levels');
+        $this->forge->createTable('job_positions_levels', true);
         $this->db->table('job_positions_levels')->insertBatch([
             ['job_position_level_name' => 'ระดับปฏิบัติงาน', 'job_position_level_en_name' => 'Operational Level (O1)', 'job_position_type_id' => 4],
             ['job_position_level_name' => 'ระดับชำนาญงาน', 'job_position_level_en_name' => 'Experienced Level (O2)', 'job_position_type_id' => 4],
@@ -218,17 +218,17 @@ class AddUserDetailToUsersTable extends Migration
         ]);
         $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('job_position_type_id', 'job_positions_types', 'id');
-        $this->forge->createTable('job_positions');
+        $this->forge->createTable('job_positions', true);
         $this->db->table('job_positions')->insertBatch([
-            ['job_position_name' => 'เจ้าพนักงานธุรการ', 'job_position_type_id' => 4],
-            ['job_position_name' => 'นักจัดการงานทั่วไป', 'job_position_type_id' => 4],
-            ['job_position_name' => 'นักทรัพยากรบุคคล', 'job_position_type_id' => 4],
-            ['job_position_name' => 'นักวิเคราะห์นโยบายและแผน', 'job_position_type_id' => 3],
-            ['job_position_name' => 'นักวิชาการคอมพิวเตอร์', 'job_position_type_id' => 3],
-            ['job_position_name' => 'นักวิชาการเงินและบัญชี', 'job_position_type_id' => 3],
-            ['job_position_name' => 'นักวิชาการพัสดุ', 'job_position_type_id' => 3],
-            ['job_position_name' => 'นิติกร', 'job_position_type_id' => 3],
-            ['job_position_name' => 'ผู้อำนวยการ', 'job_position_type_id' => 2],
+            ['job_position_name' => 'เจ้าพนักงานธุรการ', 'job_position_en_name' => 'General Service Officer', 'job_position_type_id' => 4],
+            ['job_position_name' => 'นักจัดการงานทั่วไป', 'job_position_en_name' => 'General Administration Officer', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นักทรัพยากรบุคคล', 'job_position_en_name' => 'Human Resource Officer', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นักวิเคราะห์นโยบายและแผน', 'job_position_en_name' => 'Plan and Policy Analyst', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นักวิชาการคอมพิวเตอร์', 'job_position_en_name' => 'Computer Technical Officer', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นักวิชาการเงินและบัญชี', 'job_position_en_name' => 'Finance and Accounting Analyst', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นักวิชาการพัสดุ', 'job_position_en_name' => 'Supply Analyst', 'job_position_type_id' => 3],
+            ['job_position_name' => 'นิติกร', 'job_position_en_name' => 'Legal Officer', 'job_position_type_id' => 3],
+            ['job_position_name' => 'ผู้อำนวยการ', 'job_position_en_name' => 'Director', 'job_position_type_id' => 2],
         ]);
 
         /**
