@@ -4,18 +4,17 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class FileChunkModel extends Model
+class PartyModel extends Model
 {
-    protected $table            = 'file_chunks';
-    // protected $primaryKey       = 'id';
-    protected $useAutoIncrement = false;
-    protected $returnType       = 'array';
-    protected $useSoftDeletes   = false;
+    protected $table            = 'parties';
+    protected $primaryKey       = 'id';
+    protected $useAutoIncrement = true;
+    protected $returnType       = 'object';
+    protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'file_uuid',
-        'chunk_order',
-        'chunk_data'
+        'full_title',
+        'title'
     ];
 
     protected bool $allowEmptyInserts = false;
@@ -25,11 +24,11 @@ class FileChunkModel extends Model
     protected array $castHandlers = [];
 
     // Dates
-    protected $useTimestamps = false;
-    // protected $dateFormat    = 'datetime';
-    // protected $createdField  = 'created_at';
-    // protected $updatedField  = 'updated_at';
-    // protected $deletedField  = 'deleted_at';
+    protected $useTimestamps = true;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'created_at';
+    protected $updatedField  = 'updated_at';
+    protected $deletedField  = 'deleted_at';
 
     // Validation
     protected $validationRules      = [];

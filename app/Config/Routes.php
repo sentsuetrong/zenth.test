@@ -12,4 +12,8 @@ $routes->group('admin', static function (RouteCollection $routes) {
   $routes->post('upload/chunk', 'FileController::upload');
 });
 
+$routes->group('moph-db', static function (RouteCollection $routes) {
+  $routes->get('mou', 'MouController::index');
+});
+
 service('auth')->routes($routes);

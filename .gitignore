@@ -126,3 +126,6 @@ _modules/*
 /phpunit*.xml
 
 /uploads
+
+/node_modules/
+package-lock.json

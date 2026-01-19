@@ -40,36 +40,38 @@ class FileController extends BaseController
             ->where('upload_session_id', $dzuuid)
             ->first();
 
-        $fileId = isset($existingFile['id']) ? $existingFile['id'] : $fileModel->insert([
+        $fileUuid = isset($existingFile['uuid']) ? $existingFile['uuid'] : $fileModel->insert([
             'uuid' => $uuid->uuid4()->toString(),
-            'upload_session_id' => $dzuuid,
             'filename' => $file->getClientName(),
+            'upload_session_id' => $dzuuid,
             'mime_type' => $file->getMimeType(),
             'file_size' => $totalFileSize,
             'is_public' => 1,
         ], true);
 
+        log_message('debug', $fileUuid);
+
         $chunkModel = new FileChunkModel();
         $chunkData = file_get_contents($file->getTempName());
 
         $existingChunk = $chunkModel
-            ->where('file_id', $fileId)
+            ->where('file_uuid', $fileUuid)
             ->where('chunk_order', $chunkIndex)
             ->countAllResults();
 
         if ($existingChunk === 0)
             $chunkModel->insert([
-                'file_id' => $fileId,
+                'file_uuid' => $fileUuid,
                 'chunk_order' => $chunkIndex,
                 'chunk_data' => $chunkData
             ]);
 
         $uploadedCount = $chunkModel
-            ->where('file_id', $fileId)
+            ->where('file_uuid', $fileUuid)
             ->countAllResults();
 
         if ($uploadedCount >= $totalChunks)
-            return $this->respond(['status' => 'completed', 'file_id' => $fileId]);
+            return $this->respond(['status' => 'completed', 'file_uuid' => $fileUuid]);
 
         return $this->respond(['status' => 'chunk_received', 'chunk_index' => $chunkIndex]);
     }

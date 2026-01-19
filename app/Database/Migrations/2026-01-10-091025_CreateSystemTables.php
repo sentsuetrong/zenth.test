@@ -27,11 +27,10 @@ class CreateSystemTables extends Migration
         $this->forge->createTable('file_containers', true);
 
         $this->forge->addField([
-            'id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'auto_increment' => true],
-            'container_id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'null' => true],
             'uuid' => ['type' => 'VARCHAR', 'constraint' => 36],
-            'upload_session_id' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'filename' => ['type' => 'VARCHAR', 'constraint' => 255],
+            'container_id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true, 'null' => true],
+            'upload_session_id' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'mime_type' => ['type' => 'VARCHAR', 'constraint' => 100],
             'file_size' => ['type' => 'BIGINT', 'constraint' => 20, 'unsigned' => true],
             'is_public' => ['type' => 'TINYINT', 'constraint' => 1, 'unsigned' => true, 'default' => 0],
@@ -41,18 +40,17 @@ class CreateSystemTables extends Migration
             'updated_at' => ['type' => 'DATETIME', 'default' => new RawSql('CURRENT_TIMESTAMP')],
             'deleted_at' => ['type' => 'DATETIME', 'null' => true],
         ]);
-        $this->forge->addPrimaryKey('id');
         $this->forge->addForeignKey('container_id', 'file_containers', 'id');
         $this->forge->addUniqueKey('uuid');
         $this->forge->addKey('upload_session_id');
         $this->forge->createTable('files', true);
 
         $this->forge->addField([
-            'file_id' => ['type' => 'INT', 'constraint' => 11, 'unsigned' => true],
+            'file_uuid' => ['type' => 'VARCHAR', 'constraint' => 36],
             'chunk_order' => ['type' => 'INT', 'constraint' => 5, 'unsigned' => true],
             'chunk_data' => ['type' => 'LONGBLOB'],
         ]);
-        $this->forge->addForeignKey('file_id', 'files', 'id');
+        $this->forge->addForeignKey('file_uuid', 'files', 'uuid');
         $this->forge->createTable('file_chunks', true);
 
         $this->forge->addField([

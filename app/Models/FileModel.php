@@ -3,20 +3,20 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use Michalsn\Uuid\UuidModel;
 
-class FileModel extends Model
+class FileModel extends UuidModel
 {
     protected $table            = 'files';
-    protected $primaryKey       = 'id';
-    protected $useAutoIncrement = true;
+    protected $primaryKey       = 'uuid';
+    protected $useAutoIncrement = false;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'container_id',
-        'uuid',
-        'upload_session_id',
         'filename',
+        'container_id',
+        'upload_session_id',
         'mime_type',
         'file_size',
         'is_public',
