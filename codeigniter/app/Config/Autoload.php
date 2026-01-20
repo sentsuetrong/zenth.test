@@ -75,7 +75,9 @@ class Autoload extends AutoloadConfig
      *
      * @var list<string>
      */
-    public $files = [];
+    public $files = [
+        ROOTPATH . 'app/Helpers/vite_helper.php'
+    ];
 
     /**
      * -------------------------------------------------------------------

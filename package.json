@@ -1,16 +1,21 @@
 {
-  "dependencies": {
-    "@tailwindcss/cli": "^4.1.17",
-    "@tailwindcss/postcss": "^4.1.17",
-    "autoprefixer": "^10.4.22",
-    "postcss": "^8.5.6",
-    "quill": "^2.0.3",
-    "sass": "^1.94.2",
-    "select2": "^4.1.0-rc.0",
-    "tailwindcss": "^4.1.17"
-  },
+  "name": "zenth.test",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "npx @tailwindcss/cli -i ./assets/scss/main.scss -o ./assets/css/styles.css --watch --postcss",
-    "build": "npx @tailwindcss/cli -i ./assets/scss/main.scss -o ./assets/css/styles.css --minify --postcss"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "sass-embedded": "^1.93.3",
+    "vite": "^7.2.4",
+    "vite-plugin-live-reload": "^3.0.5"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.17",
+    "quill": "^2.0.3",
+    "select2": "^4.1.0-rc.0"
   }
 }
