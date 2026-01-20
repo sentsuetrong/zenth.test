@@ -13,8 +13,8 @@ class PartyModel extends Model
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
-        'full_title',
-        'title'
+        'full_name',
+        'name'
     ];
 
     protected bool $allowEmptyInserts = false;

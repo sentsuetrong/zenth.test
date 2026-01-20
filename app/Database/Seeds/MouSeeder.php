@@ -15,10 +15,14 @@ class MouSeeder extends Seeder
         $faker = Factory::create();
 
         // $mouFaker = new Fabricator(MouModel::class, []);
-        $partyFaker = new Fabricator(PartyModel::class, []);
+        $party = new Fabricator(PartyModel::class);
 
         for ($i = 0; $i < 10; $i++) {
-            print_r(['party_name' => $faker->company()]);
+            $party->setOverrides([
+                'full_name' => esc($faker->company()) . ' ' . esc($faker->companySuffix()),
+                'name' => esc($faker->company())
+            ]);
+            $party->create();
         }
     }
 }
