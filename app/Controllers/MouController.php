@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Controllers\BaseController;
 use App\Models\MouModel;
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Debug\Timer;
 use CodeIgniter\HTTP\IncomingRequest;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Database;
@@ -28,12 +29,22 @@ class MouController extends BaseController
     }
     public function index()
     {
-        $db = Database::connect();
+        /**
+         * @var Timer $benchmark
+         */
+        $benchmark = service('timer');
+
+        $benchmark->start('mous_groups');
         $mouModel = new MouModel();
 
-        $data['query'] = $mouModel->withGroups()->getCompiledSelect();
-        $data['result'] = $db->query($data['query'])->getResult();
-        dd($data);
+        // $db = Database::connect();
+        // $data['query'] = $mouModel->withGroups()->getCompiledSelect();
+        // $data['result'] = $db->query($data['query'])->getResult();
+
+        $this->data['mous_groups'] = $mouModel->withGroups()->get();
+        $benchmark->stop('mous_groups');
+
+        $this->data['execution_times'] = $benchmark->getTimers();
 
         return view('moph-db/mou/index', $this->data);
     }

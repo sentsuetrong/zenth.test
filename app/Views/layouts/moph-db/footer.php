@@ -1,6 +1,6 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    showItemId("<?= $result === null ? 'null' : esc($result->mou->id, 'js') ?>")
+    showItem("<?= isset($result) && is_object($result) ? esc($result->mou->id, 'js') : 'null' ?>")
   })
 </script>
 

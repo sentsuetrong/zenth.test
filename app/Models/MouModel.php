@@ -16,7 +16,7 @@ class MouModel extends Model
         'full_title',
         'title',
         'entity_name',
-        'subjective',
+        'objective',
         'effective_from',
         'effective_to',
         'keywords'
@@ -74,6 +74,7 @@ class MouModel extends Model
             ->select("YEAR(effective_to) + 543 buddhistyear_effective_to")
             ->join('mous_parties mp', 'mous.id = mp.mou_id', 'left')
             ->join('parties p', 'p.id = mp.party_id', 'left')
+            ->groupBy('mous.id')
             ->orderBy('mous.effective_from DESC');
 
         return $builder;

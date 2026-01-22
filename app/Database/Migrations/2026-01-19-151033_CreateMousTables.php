@@ -15,7 +15,7 @@ class CreateMousTables extends Migration
             'full_title' => ['type' => 'TEXT'],
             'title' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
             'entity_name' => ['type' => 'VARCHAR', 'constraint' => 255, 'default' => 'กระทรวงสาธารณสุข', 'comment' => 'ชื่อหน่วยงานของเรา เช่น กอง/ศูนย์/สำนัก/สำนักงาน/กรม/กระทรวง'],
-            'subjective' => ['type' => 'TEXT', 'null' => true],
+            'objective' => ['type' => 'TEXT', 'null' => true],
             'effective_from' => ['type' => 'DATETIME', 'null' => true],
             'effective_to' => ['type' => 'DATETIME', 'null' => true],
             'keywords' => ['type' => 'VARCHAR', 'constraint' => 255, 'null' => true],
