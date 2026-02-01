@@ -16,4 +16,8 @@ $routes->group('moph-db', static function (RouteCollection $routes) {
   $routes->get('mou', 'MouController::index');
 });
 
+$routes->group('moph-db', ['namespace' => '\App\Controllers\MophDB'], static function (RouteCollection $routes) {
+  $routes->get('laws', 'LawsController::index');
+});
+
 service('auth')->routes($routes);
