@@ -4,12 +4,8 @@
 
 <div id="main-wrapper" class="relative w-full h-screen flex flex-row overflow-hidden">
   <aside id="sidebar-left" class="custom-scrollbar relative max-w-80 w-full bg-white border-r border-gray-200 flex flex-col grow item-center justify-between overflow-y-scroll overflow-x-hidden z-20">
-    <!-- Sidebar Header -->
-    <div class="p-4 border-b border-gray-100 bg-gray-50">
-      <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-        <i class="fa-solid fa-filter mr-2 text-emerald-600"></i> ตัวเลือกการค้นหา
-      </h2>
-    </div>
+    <!-- Advanced Search Controller -->
+    <?= $this->include('moph-db/mou/advanced_searchbox') ?>
 
     <p class="p-4 pb-2 text-gray-600">
       <small>ผลการค้นหา (<?= isset($execution_time) ? $execution_time : '0.0000' ?> วินาที)</small>
@@ -28,11 +24,23 @@
     </div>
   </aside>
   <main class="relative flex flex-col grow">
-    <div class="breadcrumb p-2">
-      <button id="btn-sidebar" type="button" onclick="toggleSidebar()" class="md:hidden flex items-center cursor-pointer p-2">
+    <div class="breadcrumb-wrapper p-2 flex items-center">
+      <button id="btn-sidebar" type="button" onclick="toggleSidebar()" class="p-2 mr-2 md:hidden flex items-center cursor-pointer">
         <i class="fa-solid fa-list"></i>
       </button>
       <!-- TODO: ปรับ md:hidden flex ของ sidebar และแก้ไข mou.js -->
+      <nav class="breadcrumb" aria-label="breadcrumb">
+        <ol class="flex truncate" role="list">
+          <li class="text-gray-600 mr-4 last:mr-0">
+            <i class="fa-solid fa-home mr-2"></i>
+            <a href="#" class="hover:text-gray-900">หน้าหลักสืบค้น</a>
+          </li>
+          <li class="text-gray-600 mr-4 last:mr-0">
+            <i class="fa-solid fa-caret-right text-sm mr-4"></i>
+            <a href="#" class="hover:text-gray-900">ในการพัฒนาและส่งเสริมการเป็นองค์กรคุณธรรมต้นแบบของสำนักงานปลัดกระทรวงสาธารณสุขต่อไป</a>
+          </li>
+        </ol>
+      </nav>
     </div>
     <div id="content-wrapper" class="custom-scrollbar flex grow overflow-y-scroll overflow-x-hidden">
 

@@ -1,3 +1,235 @@
+class SmartSelect {
+  constructor(containerId, options, config = {}) {
+    this.container = document.getElementById(containerId)
+    if (!this.container) return
+    this.options = options
+    this.config = {
+      multiple: config.multiple !== undefined ? config.multiple : true,
+      placeholder: config.placeholder || 'เลือก...',
+      maxHeight: config.maxHeight || '250px',
+      selected: config.selected || null,
+      onSelectionChange: config.onSelectionChange || null,
+    }
+
+    this.selectedValues = []
+    this.filteredOptions = []
+    this.highlightedIndex = -1
+    this.inputId = `${containerId}-input`
+
+    this.init()
+  }
+
+  init() {
+    this.handlePreSelection()
+    this.renderBaseStructure()
+    this.cacheElements()
+    this.bindEvents()
+    this.updateUI()
+  }
+
+  handlePreSelection() {
+    const initial = this.config.selected
+    if (!initial) return
+
+    let rawValues = Array.isArray(initial) ? initial : [initial]
+
+    const validValues = this.options.map((o) => String(o.value))
+    const filtered = rawValues
+      .map((v) => String(v))
+      .filter((v) => validValues.includes(v))
+
+    if (this.config.multiple) {
+      this.selectedValues = [...new Set(filtered)]
+    } else {
+      this.selectedValues = filtered.length > 0 ? [filtered[0]] : []
+    }
+  }
+
+  renderBaseStructure() {
+    this.container.innerHTML = `
+          <div class="smart-select-root relative w-full">
+              <div class="input-wrapper min-h-[48px] w-full flex items-center p-2 bg-white border border-gray-300 rounded-md shadow-sm focus:border-transparent focus:ring-4 focus:ring-emerald-500 focus-within:border-emerald-600 transition-all cursor-text">
+                  <div class="flex flex-wrap items-center gap-2 grow">
+                      <div class="chips-list flex flex-wrap gap-2"></div>
+                      <input id="${this.inputId}" type="text" class="search-input grow min-w-[60px] outline-none bg-transparent text-sm text-gray-700 py-1" placeholder="${this.config.placeholder}" autocomplete="off">
+                  </div>
+                  <i class="fa-solid fa-chevron-down chevron-icon text-gray-300 text-[10px] transition-transform duration-300 ml-2"></i>
+              </div>
+              <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-md shadow-lg overflow-hidden">
+                  <ul class="options-list overflow-y-auto custom-scrollbar p-2" style="max-height: ${this.config.maxHeight}"></ul>
+                  <div class="no-data hidden pb-4 text-center text-sm text-gray-400 font-light">ไม่พบผลลัพธ์</div>
+              </div>
+          </div>`
+  }
+
+  cacheElements() {
+    this.root = this.container.querySelector('.smart-select-root')
+    this.inputWrapper = this.container.querySelector('.input-wrapper')
+    this.searchInput = this.container.querySelector('.search-input')
+    this.chipsList = this.container.querySelector('.chips-list')
+    this.dropdownMenu = this.container.querySelector('.dropdown-menu')
+    this.optionsList = this.container.querySelector('.options-list')
+    this.noData = this.container.querySelector('.no-data')
+  }
+
+  bindEvents() {
+    this.inputWrapper.onclick = () => this.searchInput.focus()
+    this.searchInput.onfocus = () => this.openDropdown()
+    this.searchInput.oninput = (e) => {
+      this.openDropdown()
+      this.filterOptions(e.target.value)
+    }
+    this.searchInput.onkeydown = (e) => this.handleKeyDown(e)
+    document.addEventListener('click', (e) => {
+      if (!this.container.contains(e.target)) this.closeDropdown()
+    })
+  }
+
+  handleKeyDown(e) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault()
+        this.openDropdown()
+        this.highlightedIndex = Math.min(
+          this.highlightedIndex + 1,
+          this.filteredOptions.length - 1,
+        )
+        this.updateHighlight()
+        break
+      case 'ArrowUp':
+        e.preventDefault()
+        this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0)
+        this.updateHighlight()
+        break
+      case 'Enter':
+        e.preventDefault()
+        if (
+          this.highlightedIndex >= 0 &&
+          this.filteredOptions[this.highlightedIndex]
+        ) {
+          this.selectOption(this.filteredOptions[this.highlightedIndex])
+        }
+        break
+      case 'Backspace':
+        if (this.searchInput.value === '' && this.selectedValues.length > 0) {
+          this.removeOption(this.selectedValues[this.selectedValues.length - 1])
+        }
+        break
+      case 'Escape':
+        this.closeDropdown()
+        break
+    }
+  }
+
+  updateHighlight() {
+    const listItems = this.optionsList.querySelectorAll('li')
+    listItems.forEach((li, idx) => {
+      if (idx === this.highlightedIndex) {
+        li.classList.add('option-highlighted')
+        li.scrollIntoView({ block: 'nearest' })
+      } else {
+        li.classList.remove('option-highlighted')
+      }
+    })
+  }
+
+  openDropdown() {
+    if (this.dropdownMenu.classList.contains('hidden')) {
+      this.dropdownMenu.classList.remove('hidden')
+      this.root.classList.add('select-is-open')
+      this.filterOptions(this.searchInput.value)
+    }
+  }
+
+  closeDropdown() {
+    this.dropdownMenu.classList.add('hidden')
+    this.root.classList.remove('select-is-open')
+    this.highlightedIndex = -1
+  }
+
+  filterOptions(query = '') {
+    this.filteredOptions = this.options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(query.toLowerCase()) &&
+        !this.selectedValues.includes(String(opt.value)),
+    )
+
+    this.optionsList.innerHTML = ''
+    this.highlightedIndex = this.filteredOptions.length > 0 ? 0 : -1
+
+    if (this.filteredOptions.length === 0) {
+      this.noData.classList.remove('hidden')
+    } else {
+      this.noData.classList.add('hidden')
+      const fragment = document.createDocumentFragment()
+      this.filteredOptions.forEach((opt, idx) => {
+        const li = document.createElement('li')
+        li.className = `px-3 py-2 text-sm cursor-pointer rounded-md transition-all flex items-center justify-between group ${idx === 0 ? 'option-highlighted' : ''}`
+        li.innerHTML = `<span>${opt.label}</span><i class="fa-solid fa-plus text-gray-200 group-hover:text-emerald-400 text-[10px]"></i>`
+        li.onmouseenter = () => {
+          this.highlightedIndex = idx
+          this.updateHighlight()
+        }
+        li.onclick = (e) => {
+          e.stopPropagation()
+          this.selectOption(opt)
+        }
+        fragment.appendChild(li)
+      })
+      this.optionsList.appendChild(fragment)
+    }
+  }
+
+  selectOption(opt) {
+    const value = String(opt.value)
+    if (this.config.multiple) {
+      this.selectedValues.push(value)
+    } else {
+      this.selectedValues = [value]
+      this.closeDropdown()
+    }
+    this.searchInput.value = ''
+    this.updateUI()
+    if (this.config.onSelectionChange)
+      this.config.onSelectionChange(this.getValues())
+  }
+
+  removeOption(val) {
+    this.selectedValues = this.selectedValues.filter((v) => v !== String(val))
+    this.updateUI()
+    if (this.config.onSelectionChange)
+      this.config.onSelectionChange(this.getValues())
+  }
+
+  updateUI() {
+    this.chipsList.innerHTML = ''
+    const fragment = document.createDocumentFragment()
+    this.selectedValues.forEach((val) => {
+      const opt = this.options.find((o) => String(o.value) === val)
+      if (!opt) return
+      const chip = document.createElement('div')
+      chip.className =
+        'flex items-center gap-1.5 px-2 py-1 bg-emerald-600 text-white text-[12px] font-medium rounded-md animate-in zoom-in-95 duration-200'
+      chip.innerHTML = `<span>${opt.label}</span><button type="button" class="hover:bg-emerald-800 rounded p-0.5"><i class="fa-solid fa-xmark text-[10px]"></i></button>`
+      chip.querySelector('button').onclick = (e) => {
+        e.stopPropagation()
+        this.removeOption(val)
+      }
+      fragment.appendChild(chip)
+    })
+    this.chipsList.appendChild(fragment)
+    this.searchInput.placeholder =
+      this.selectedValues.length > 0 ? '' : this.config.placeholder
+    this.filterOptions(this.searchInput.value)
+  }
+
+  getValues() {
+    return this.config.multiple
+      ? this.selectedValues
+      : this.selectedValues[0] || null
+  }
+}
+
 // --- 1. Mock Data ---
 const mouData = [
   {
@@ -282,6 +514,8 @@ function expandYear(yearId = null) {
 function showItem(itemId = null) {
   if (itemId) {
     const targetItem = document.querySelector(`.item[data-id="${itemId}"]`)
+    if (!targetItem) return
+
     if (window.location.href !== targetItem.getAttribute('href'))
       window.history.pushState(null, null, targetItem.getAttribute('href'))
 
