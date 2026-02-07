@@ -59,16 +59,16 @@ class AuthController extends ApiController
             'password' => $this->request->getJsonVar('password')
         ];
 
-        // ตรวจสอบว่า User/Pass ถูกต้องไหม
-        $valid = auth()->check($credentials);
 
+        // 3. ค้นหา User
+        $valid = auth('tokens')->check($credentials);
         if (! $valid) {
             return $this->fail('Invalid login credentials', 401);
         }
 
-        // 3. ดึง User Object
+        unset($credentials['password']);
         $users = new UserModel();
-        $user = $users->findById(auth()->id());
+        $user = $users->findByCredentials($credentials);
 
         // 4. สร้าง Access Token (สำหรับใช้กับ Fetch API)
         // 'main_token' คือชื่อ token (ตั้งอะไรก็ได้)
