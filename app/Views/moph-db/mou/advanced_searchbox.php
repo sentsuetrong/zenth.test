@@ -11,7 +11,7 @@
       class="mb-2 block text-sm font-bold text-emerald-600 hover:text-emerald-500 cursor-pointer">กฎหมาย</label>
     <div class="relative">
       <input id="search-box" type="text" placeholder="พิมพ์คำค้นหา..."
-        class="w-full h-12 rounded-md border border-gray-300 bg-white p-2 text-sm focus:border-transparent focus:ring-2 focus:ring-emerald-500 focus:outline-none" />
+        class="w-full h-12 text-slate-700 rounded-sm border border-gray-200 shadow-sm bg-white px-4 py-2 text-sm focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50 focus:outline-none focus-within:ring-4 focus-within:ring-emerald-50 focus-within:border-emerald-500 transition" autocomplete="on" />
     </div>
     <!-- Search box -->
     <div class="mt-2 mb-4 flex">

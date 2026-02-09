@@ -19,8 +19,8 @@ class SmartSelect {
     this.handlePreSelection()
     this.render()
     this.cache()
-    this.filteredOptions = [...this.options] // Init with all options
-    this.bindEvents()
+    this.filteredOptions = [...this.options]
+    this.bindEvents() // Bind events once (Delegation logic is here)
     this.updateUI()
   }
 
@@ -40,34 +40,26 @@ class SmartSelect {
   }
 
   render() {
-    // ปรับโครงสร้าง HTML:
-    // 1. ลบ .chips-list wrapper ออก
-    // 2. ตั้งชื่อ class ให้ container หลักเป็น .input-content เพื่อใช้อ้างอิงในการวาง Chips
     this.container.innerHTML = `
       <div class="smart-select-root relative w-full">
-          <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm focus-within:ring-4 focus-within:ring-emerald-50 focus-within:border-emerald-500 transition-all cursor-text" id="${this.container.id}-wrapper">
-              
-              <!-- Container หลักสำหรับ Icon, Chips และ Input ให้เรียงต่อกัน (Flow) -->
-              <div class="input-content flex flex-wrap items-center gap-2 flex-1">
-                  <i class="fa-solid fa-magnifying-glass text-slate-400 text-sm ml-1 select-none"></i>
-                  <!-- Chips จะถูกแทรกตรงนี้ -->
-                  <input id="${this.container.id}-input" type="text" class="search-input flex-1 min-w-[20px] outline-none bg-transparent text-sm text-slate-700 py-1 font-medium placeholder:text-slate-400" placeholder="${this.config.placeholder}" autocomplete="off">
-              </div>
-
-              <div class="flex items-center gap-2 ml-1">
-                  <span class="loading-indicator hidden text-emerald-500"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-                  <i class="fa-solid fa-chevron-down chevron-icon text-slate-300 text-[10px] transition-transform duration-300 mr-1"></i>
-              </div>
+        <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-sm shadow-sm focus-within:ring-4 focus-within:ring-emerald-50 focus-within:border-emerald-500 transition-all cursor-text" id="${this.container.id}-wrapper">
+          <div class="input-content flex flex-wrap items-center gap-2 flex-1 overflow-hidden">
+            <span class="input-measure absolute invisible whitespace-pre text-sm font-medium pointer-events-none"></span>
+            <input id="${this.container.id}-input" type="text" class="search-input flex-1 min-w-12.5 max-w-full outline-none bg-transparent text-sm text-slate-700 font-medium placeholder:text-slate-400" placeholder="${this.config.placeholder}" autocomplete="off">
           </div>
-          
-          <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-black/5 transform origin-top transition-all duration-200">
-              <div class="p-2 bg-slate-50/50 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3">ตัวเลือกที่มี</div>
-              <ul class="options-list max-h-62.5 overflow-y-auto p-1 custom-scrollbar"></ul>
-              <div class="no-data hidden p-8 text-center">
-                  <div class="text-slate-300 text-2xl mb-2"><i class="fa-regular fa-folder-open"></i></div>
-                  <div class="text-sm text-slate-500 font-medium">ไม่พบข้อมูลที่ค้นหา</div>
-              </div>
+          <div class="flex items-center gap-2 ml-1">
+            <i class="fa-solid fa-chevron-down chevron-icon text-slate-300 text-[10px] transition-transform duration-300 mr-1"></i>
           </div>
+        </div>
+        
+        <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-sm shadow-2xl overflow-hidden ring-1 ring-black/5 transform origin-top transition-all duration-200">
+          ${this.config.multiple ? '<div class="p-2 bg-slate-50/50 border-b border-slate-100 text-[10px] text-slate-900 font-bold uppercase tracking-wider px-3">เลือกได้หลายตัวเลือก</div>' : ''}
+          <ul class="options-list max-h-62.5 overflow-y-auto p-1 custom-scrollbar"></ul>
+          <div class="no-data hidden p-8 text-center">
+            <div class="text-slate-300 text-2xl mb-2"><i class="fa-regular fa-folder-open"></i></div>
+            <div class="text-sm text-slate-500 font-medium">ไม่พบข้อมูลที่ค้นหา</div>
+          </div>
+        </div>
       </div>`
   }
 
@@ -75,55 +67,115 @@ class SmartSelect {
     this.root = this.container.querySelector('.smart-select-root')
     this.input = this.container.querySelector('.search-input')
     this.wrapper = this.container.querySelector('.input-wrapper')
-    // เปลี่ยนจาก chipsList เป็น inputContent แทน เพราะไม่มี chipsList แยกแล้ว
     this.inputContent = this.container.querySelector('.input-content')
     this.dropdown = this.container.querySelector('.dropdown-menu')
     this.optionsList = this.container.querySelector('.options-list')
     this.noDataMsg = this.container.querySelector('.no-data')
     this.chevron = this.container.querySelector('.chevron-icon')
+    this.measureSpan = this.container.querySelector('.input-measure')
   }
 
   bindEvents() {
-    // Toggle Dropdown
+    // 1. Wrapper Click
     this.wrapper.addEventListener('click', (e) => {
-      // ป้องกันการเปิด Dropdown ถ้ากดที่ปุ่มลบ Chip
       if (e.target.closest('.fa-xmark')) return
-
       if (e.target !== this.input) {
         this.input.focus()
         this.toggleDropdown(true)
       }
     })
 
-    // Input Handling
+    // 2. Input Events
     this.input.addEventListener('input', (e) => {
-      this.filterOptions(e.target.value)
       this.toggleDropdown(true)
+      this.filterOptions(e.target.value)
+      this.adjustInputWidth()
     })
-
     this.input.addEventListener('focus', () => this.toggleDropdown(true))
-
-    // Keyboard Nav
     this.input.addEventListener('keydown', (e) => this.handleKeyDown(e))
 
-    // Close outside
+    // 3. Global Click (Close outside)
     document.addEventListener('click', (e) => {
       if (!this.root.contains(e.target)) {
         this.toggleDropdown(false)
       }
     })
+
+    // --- Performance Improvement: Event Delegation for Options List ---
+
+    // Delegation: Click Option
+    this.optionsList.addEventListener('click', (e) => {
+      e.stopPropagation()
+      e.preventDefault()
+      const li = e.target.closest('li')
+      if (li) {
+        const index = parseInt(li.dataset.index, 10)
+        if (!isNaN(index) && this.filteredOptions[index]) {
+          this.selectOption(this.filteredOptions[index])
+        }
+      }
+    })
+
+    // Delegation: Mouseover (Highlight)
+    this.optionsList.addEventListener('mouseover', (e) => {
+      const li = e.target.closest('li')
+      if (li) {
+        const index = parseInt(li.dataset.index, 10)
+        // Update highlight only if index changed
+        if (index !== this.highlightedIndex) {
+          this.updateHighlightUI(this.highlightedIndex, index)
+          this.highlightedIndex = index
+        }
+      }
+    })
+
+    // Prevent input blur on mousedown
+    this.optionsList.addEventListener('mousedown', (e) => e.preventDefault())
+  }
+
+  adjustInputWidth() {
+    if (!this.config.multiple && this.selectedValues.length > 0) return
+    const value = this.input.value
+    if (value) {
+      this.measureSpan.textContent = value
+      this.input.style.width = `${this.measureSpan.offsetWidth + 24}px`
+    } else {
+      if (this.selectedValues.length > 0) {
+        this.input.style.width = ''
+      } else {
+        this.measureSpan.textContent = this.config.placeholder
+        this.input.style.width = `${this.measureSpan.offsetWidth + 24}px`
+      }
+    }
   }
 
   toggleDropdown(show) {
     if (show) {
+      const wasHidden = this.dropdown.classList.contains('hidden')
       this.dropdown.classList.remove('hidden')
       this.wrapper.classList.add(
         'ring-4',
         'ring-emerald-50',
         'border-emerald-500',
       )
-      this.chevron.classList.add('rotate-180')
-      this.renderOptions()
+      this.chevron.classList.add('rotate-180', 'text-emerald-500')
+      this.chevron.classList.remove('text-slate-300')
+
+      if (wasHidden) {
+        // Recalculate highlight only on open
+        if (this.selectedValues.length > 0) {
+          const lastSelected =
+            this.selectedValues[this.selectedValues.length - 1]
+          const idx = this.filteredOptions.findIndex(
+            (o) => String(o.value) === lastSelected,
+          )
+          this.highlightedIndex = idx !== -1 ? idx : -1
+        } else {
+          this.highlightedIndex = -1
+        }
+        this.renderOptions() // Initial render
+        this.scrollToHighlighted()
+      }
     } else {
       this.dropdown.classList.add('hidden')
       this.wrapper.classList.remove(
@@ -131,12 +183,13 @@ class SmartSelect {
         'ring-emerald-50',
         'border-emerald-500',
       )
-      this.chevron.classList.remove('rotate-180')
+      this.chevron.classList.add('text-slate-300')
+      this.chevron.classList.remove('rotate-180', 'text-emerald-500')
       this.highlightedIndex = -1
     }
   }
 
-  filterOptions(query) {
+  filterOptions(query, activeValue = null) {
     const lowerQuery = query.toLowerCase()
     this.filteredOptions = this.options.filter((o) =>
       o.label.toLowerCase().includes(lowerQuery),
@@ -148,55 +201,80 @@ class SmartSelect {
     } else {
       this.optionsList.classList.remove('hidden')
       this.noDataMsg.classList.add('hidden')
-      this.highlightedIndex = 0 // Reset highlight on filter
+
+      if (activeValue !== null) {
+        const idx = this.filteredOptions.findIndex(
+          (o) => String(o.value) === String(activeValue),
+        )
+        this.highlightedIndex = idx !== -1 ? idx : 0
+      } else {
+        this.highlightedIndex = 0
+      }
     }
     this.renderOptions()
+    if (this.highlightedIndex !== -1) this.scrollToHighlighted()
   }
 
+  // Performance: Use DocumentFragment
   renderOptions() {
     this.optionsList.innerHTML = ''
+    const fragment = document.createDocumentFragment()
+
     this.filteredOptions.forEach((opt, index) => {
       const isSelected = this.selectedValues.includes(String(opt.value))
       const isHighlighted = index === this.highlightedIndex
 
       const li = document.createElement('li')
-      li.className = `
-        flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm mb-1 transition-all
-        ${isHighlighted ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}
-        ${isSelected ? 'bg-emerald-50 text-emerald-700 font-medium' : ''}`
+      // Store index for Event Delegation
+      li.dataset.index = index
+
+      // Base classes
+      li.className = `flex items-center justify-between px-3 py-2.5 rounded-sm cursor-pointer text-sm mb-1 transition-all`
+
+      // Dynamic classes (Separate logic for better readability)
+      if (isHighlighted) {
+        li.classList.add('bg-emerald-100', 'text-emerald-900')
+      } else {
+        li.classList.add('text-emerald-600', 'hover:bg-emerald-50')
+      }
+
+      if (isSelected) {
+        li.classList.add('bg-emerald-50', 'text-emerald-700', 'font-medium')
+        // Ensure highlight overrides select style slightly if needed, or mix them
+        if (!isHighlighted) li.classList.remove('text-emerald-600')
+      }
 
       li.innerHTML = `
         <div class="flex items-center gap-2 pointer-events-none">
-            ${opt.icon ? `<i class="${opt.icon} w-5 text-center ${isSelected ? 'text-emerald-600' : 'text-slate-400'}"></i>` : ''}
-            <span>${opt.label}</span>
+          ${opt.icon ? `<i class="${opt.icon} w-5 text-center ${isSelected ? 'text-emerald-600' : 'text-slate-400'}"></i>` : ''}
+          <span>${opt.label}</span>
         </div>
         ${isSelected ? '<i class="fa-solid fa-check text-emerald-600 pointer-events-none"></i>' : ''}`
 
-      li.addEventListener('mousedown', (e) => {
-        e.preventDefault()
-      })
-
-      li.addEventListener('click', (e) => {
-        e.stopPropagation()
-        e.preventDefault()
-        this.selectOption(opt)
-      })
-
-      li.addEventListener('mouseenter', () => {
-        this.highlightedIndex = index
-        Array.from(this.optionsList.children).forEach((child, i) => {
-          if (i === index) {
-            child.classList.add('bg-slate-100', 'text-slate-900')
-            child.classList.remove('text-slate-600', 'hover:bg-slate-50')
-          } else {
-            child.classList.remove('bg-slate-100', 'text-slate-900')
-            child.classList.add('text-slate-600', 'hover:bg-slate-50')
-          }
-        })
-      })
-
-      this.optionsList.appendChild(li)
+      // No individual event listeners here!
+      fragment.appendChild(li)
     })
+
+    this.optionsList.appendChild(fragment)
+  }
+
+  // Performance: Update classes without re-rendering the whole list
+  updateHighlightUI(prevIndex, newIndex) {
+    const items = this.optionsList.children
+
+    // Remove highlight from previous
+    if (prevIndex >= 0 && items[prevIndex]) {
+      const prevItem = items[prevIndex]
+      prevItem.classList.remove('bg-emerald-100', 'text-emerald-900')
+      prevItem.classList.add('text-emerald-600', 'hover:bg-emerald-50')
+    }
+
+    // Add highlight to new
+    if (newIndex >= 0 && items[newIndex]) {
+      const newItem = items[newIndex]
+      newItem.classList.remove('text-emerald-600', 'hover:bg-emerald-50')
+      newItem.classList.add('bg-emerald-100', 'text-emerald-900')
+    }
   }
 
   selectOption(option) {
@@ -208,9 +286,12 @@ class SmartSelect {
         this.selectedValues.push(val)
       }
       this.input.value = ''
-      this.filterOptions('')
+      this.filterOptions('', val)
+      this.adjustInputWidth()
     } else {
+      // Single Select Logic
       this.selectedValues = [val]
+      this.input.value = '' // FIX: Clear input for single select
       this.toggleDropdown(false)
       this.input.blur()
     }
@@ -226,16 +307,12 @@ class SmartSelect {
   removeValue(val) {
     this.selectedValues = this.selectedValues.filter((v) => v !== val)
     this.updateUI()
-
-    // Fix: เรียก renderOptions เพื่ออัปเดตสถานะใน Dropdown (ลบติ๊กถูก/สีเขียวออก)
-    // ทำให้เวลา Backspace แล้ว list อัปเดตทันที
     this.renderOptions()
-
     this.triggerChange()
+    this.adjustInputWidth()
   }
 
   updateUI() {
-    // 1. ลบ Chips เก่าทั้งหมดออกจาก inputContent (ยกเว้น input และ icon)
     const existingChips = this.inputContent.querySelectorAll('.chip')
     existingChips.forEach((c) => c.remove())
 
@@ -245,7 +322,7 @@ class SmartSelect {
         if (!opt) return
 
         const chip = document.createElement('div')
-        chip.className = `chip chip-anim flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 select-none whitespace-nowrap`
+        chip.className = `chip chip-anim flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-sm text-xs border border-emerald-200 select-none whitespace-nowrap`
         chip.innerHTML = `
           <span>${opt.label}</span>
           <i class="fa-solid fa-xmark ml-1 cursor-pointer hover:text-emerald-900 rounded-full p-0.5 text-[10px]"></i>`
@@ -253,54 +330,54 @@ class SmartSelect {
         chip.querySelector('i').addEventListener('click', (e) => {
           e.stopPropagation()
           this.removeValue(val)
-          // focus input กลับหลังลบ chip
           this.input.focus()
         })
 
-        // 2. แทรก Chips เข้าไป "ก่อนหน้า Input" เสมอ
         this.inputContent.insertBefore(chip, this.input)
       })
 
       if (!this.config.multiple) {
-        // กรณี Single Select:
-        // ทำให้ Input เล็กลงและโปร่งใส เพื่อให้พิมพ์ Backspace ได้ แต่ไม่บัง Chip
         this.input.style.width = '1px'
         this.input.style.padding = '0'
         this.input.style.minWidth = '1px'
         this.input.placeholder = ''
       } else {
-        // Reset style สำหรับ multiple
-        this.input.style.width = ''
         this.input.style.padding = ''
-        this.input.style.minWidth = '20px'
+        this.input.style.minWidth = '50px'
         this.input.placeholder = ''
+        this.adjustInputWidth()
       }
     } else {
-      // กรณีไม่มีค่าที่เลือก Reset กลับเป็นปกติ
       this.input.placeholder = this.config.placeholder
       this.input.style.width = ''
       this.input.style.padding = ''
-      this.input.style.minWidth = '20px'
+      this.input.style.minWidth = '50px'
+      this.adjustInputWidth()
     }
   }
 
   handleKeyDown(e) {
+    const maxIndex = this.filteredOptions.length - 1
+
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        this.highlightedIndex = Math.min(
-          this.highlightedIndex + 1,
-          this.filteredOptions.length - 1,
-        )
+        const nextIndex = Math.min(this.highlightedIndex + 1, maxIndex)
+        // Performance: Don't re-render, just update styles
+        this.updateHighlightUI(this.highlightedIndex, nextIndex)
+        this.highlightedIndex = nextIndex
         this.scrollToHighlighted()
-        this.renderOptions()
         break
+
       case 'ArrowUp':
         e.preventDefault()
-        this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0)
+        const prevIndex = Math.max(this.highlightedIndex - 1, 0)
+        // Performance: Don't re-render, just update styles
+        this.updateHighlightUI(this.highlightedIndex, prevIndex)
+        this.highlightedIndex = prevIndex
         this.scrollToHighlighted()
-        this.renderOptions()
         break
+
       case 'Enter':
         e.preventDefault()
         if (
@@ -310,13 +387,18 @@ class SmartSelect {
           this.selectOption(this.filteredOptions[this.highlightedIndex])
         }
         break
+
+      // FIX: ปิด Dropdown เมื่อกดปุ่ม Tab เพื่อย้าย Focus
+      case 'Tab':
+        this.toggleDropdown(false)
+        break
+
       case 'Backspace':
         if (this.input.value === '' && this.selectedValues.length > 0) {
-          // ลบค่าตัวล่าสุด
           this.removeValue(this.selectedValues[this.selectedValues.length - 1])
-          // เนื่องจากเราเรียก this.renderOptions() ใน removeValue แล้ว สถานะใน list จะอัปเดตเอง
         }
         break
+
       case 'Escape':
         this.toggleDropdown(false)
         this.input.blur()
@@ -335,10 +417,6 @@ class SmartSelect {
     if (this.config.onSelectionChange) {
       this.config.onSelectionChange(this.selectedValues)
     }
-  }
-
-  getValues() {
-    return this.selectedValues
   }
 }
 

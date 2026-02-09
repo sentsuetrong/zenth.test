@@ -7,10 +7,14 @@
       <div class="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-xl shadow-sm">
         <i class="fa-solid fa-handshake"></i>
       </div>
-      <div>
-        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= isset($system_name_en) ? $system_name_en : 'MOPH MOU DATABASE' ?></h1>
-        <p class="text-xs text-gray-500 truncate"><?= isset($system_name) ? $system_name : 'ระบบสืบค้นบันทึกความเข้าใจและความร่วมมือ (MoU)' ?></p>
-      </div>
+      <a class="hidden md:block" href="#">
+        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= !isset($system_name_en) ? $system_name_en : 'MOPH DATABASE' ?></h1>
+        <p class="text-xs text-gray-500 truncate"><?= !isset($system_name) ? $system_name : 'ระบบคลังข้อมูล กระทรวงสาธารณสุข' ?></p>
+      </a>
+      <a class="md:hidden block" href="#">
+        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= !isset($system_name_en) ? $system_name_en : 'MOPH DB' ?></h1>
+        <p class="text-xs text-gray-500 truncate"><?= !isset($system_name) ? $system_name : 'ระบบคลังข้อมูล สธ.' ?></p>
+      </a>
     </div>
   </div>
 </div>
