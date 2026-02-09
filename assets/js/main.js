@@ -1,105 +1,305 @@
 class SmartSelect {
-  constructor(containerId, options, config = {}) {
-    this.container = document.getElementById(containerId)
-    if (!this.container) return
+  constructor(id, options, config = {}) {
+    this.container = document.getElementById(id)
     this.options = options
     this.config = {
-      multiple: config.multiple !== undefined ? config.multiple : true,
-      placeholder: config.placeholder || 'เลือก...',
-      maxHeight: config.maxHeight || '250px',
-      selected: config.selected || null,
-      onSelectionChange: config.onSelectionChange || null,
+      multiple: true,
+      placeholder: 'เลือก...',
+      selected: null,
+      onSelectionChange: null,
+      ...config,
     }
-
     this.selectedValues = []
     this.filteredOptions = []
     this.highlightedIndex = -1
-    this.inputId = `${containerId}-input`
-
     this.init()
   }
 
   init() {
     this.handlePreSelection()
-    this.renderBaseStructure()
-    this.cacheElements()
+    this.render()
+    this.cache()
+    this.filteredOptions = [...this.options] // Init with all options
     this.bindEvents()
     this.updateUI()
   }
 
   handlePreSelection() {
-    const initial = this.config.selected
-    if (!initial) return
-
-    let rawValues = Array.isArray(initial) ? initial : [initial]
-
+    const init = this.config.selected
+    if (!init) return
+    const raw = Array.isArray(init) ? init : [init]
     const validValues = this.options.map((o) => String(o.value))
-    const filtered = rawValues
+    const filtered = raw
       .map((v) => String(v))
       .filter((v) => validValues.includes(v))
-
-    if (this.config.multiple) {
-      this.selectedValues = [...new Set(filtered)]
-    } else {
-      this.selectedValues = filtered.length > 0 ? [filtered[0]] : []
-    }
+    this.selectedValues = this.config.multiple
+      ? [...new Set(filtered)]
+      : filtered[0]
+        ? [filtered[0]]
+        : []
   }
 
-  renderBaseStructure() {
+  render() {
+    // ปรับโครงสร้าง HTML:
+    // 1. ลบ .chips-list wrapper ออก
+    // 2. ตั้งชื่อ class ให้ container หลักเป็น .input-content เพื่อใช้อ้างอิงในการวาง Chips
     this.container.innerHTML = `
-          <div class="smart-select-root relative w-full">
-              <div class="input-wrapper min-h-[48px] w-full flex items-center p-2 bg-white border border-gray-300 rounded-md shadow-sm focus:border-transparent focus:ring-4 focus:ring-emerald-500 focus-within:border-emerald-600 transition-all cursor-text">
-                  <div class="flex flex-wrap items-center gap-2 grow">
-                      <div class="chips-list flex flex-wrap gap-2"></div>
-                      <input id="${this.inputId}" type="text" class="search-input grow min-w-[60px] outline-none bg-transparent text-sm text-gray-700 py-1" placeholder="${this.config.placeholder}" autocomplete="off">
-                  </div>
-                  <i class="fa-solid fa-chevron-down chevron-icon text-gray-300 text-[10px] transition-transform duration-300 ml-2"></i>
+      <div class="smart-select-root relative w-full">
+          <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm focus-within:ring-4 focus-within:ring-emerald-50 focus-within:border-emerald-500 transition-all cursor-text" id="${this.container.id}-wrapper">
+              
+              <!-- Container หลักสำหรับ Icon, Chips และ Input ให้เรียงต่อกัน (Flow) -->
+              <div class="input-content flex flex-wrap items-center gap-2 flex-1">
+                  <i class="fa-solid fa-magnifying-glass text-slate-400 text-sm ml-1 select-none"></i>
+                  <!-- Chips จะถูกแทรกตรงนี้ -->
+                  <input id="${this.container.id}-input" type="text" class="search-input flex-1 min-w-[20px] outline-none bg-transparent text-sm text-slate-700 py-1 font-medium placeholder:text-slate-400" placeholder="${this.config.placeholder}" autocomplete="off">
               </div>
-              <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-gray-100 rounded-md shadow-lg overflow-hidden">
-                  <ul class="options-list overflow-y-auto custom-scrollbar p-2" style="max-height: ${this.config.maxHeight}"></ul>
-                  <div class="no-data hidden pb-4 text-center text-sm text-gray-400 font-light">ไม่พบผลลัพธ์</div>
+
+              <div class="flex items-center gap-2 ml-1">
+                  <span class="loading-indicator hidden text-emerald-500"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
+                  <i class="fa-solid fa-chevron-down chevron-icon text-slate-300 text-[10px] transition-transform duration-300 mr-1"></i>
               </div>
-          </div>`
+          </div>
+          
+          <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden ring-1 ring-black/5 transform origin-top transition-all duration-200">
+              <div class="p-2 bg-slate-50/50 border-b border-slate-100 text-[10px] text-slate-400 font-bold uppercase tracking-wider px-3">ตัวเลือกที่มี</div>
+              <ul class="options-list max-h-62.5 overflow-y-auto p-1 custom-scrollbar"></ul>
+              <div class="no-data hidden p-8 text-center">
+                  <div class="text-slate-300 text-2xl mb-2"><i class="fa-regular fa-folder-open"></i></div>
+                  <div class="text-sm text-slate-500 font-medium">ไม่พบข้อมูลที่ค้นหา</div>
+              </div>
+          </div>
+      </div>`
   }
 
-  cacheElements() {
+  cache() {
     this.root = this.container.querySelector('.smart-select-root')
-    this.inputWrapper = this.container.querySelector('.input-wrapper')
-    this.searchInput = this.container.querySelector('.search-input')
-    this.chipsList = this.container.querySelector('.chips-list')
-    this.dropdownMenu = this.container.querySelector('.dropdown-menu')
+    this.input = this.container.querySelector('.search-input')
+    this.wrapper = this.container.querySelector('.input-wrapper')
+    // เปลี่ยนจาก chipsList เป็น inputContent แทน เพราะไม่มี chipsList แยกแล้ว
+    this.inputContent = this.container.querySelector('.input-content')
+    this.dropdown = this.container.querySelector('.dropdown-menu')
     this.optionsList = this.container.querySelector('.options-list')
-    this.noData = this.container.querySelector('.no-data')
+    this.noDataMsg = this.container.querySelector('.no-data')
+    this.chevron = this.container.querySelector('.chevron-icon')
   }
 
   bindEvents() {
-    this.inputWrapper.onclick = () => this.searchInput.focus()
-    this.searchInput.onfocus = () => this.openDropdown()
-    this.searchInput.oninput = (e) => {
-      this.openDropdown()
-      this.filterOptions(e.target.value)
-    }
-    this.searchInput.onkeydown = (e) => this.handleKeyDown(e)
-    document.addEventListener('click', (e) => {
-      if (!this.container.contains(e.target)) this.closeDropdown()
+    // Toggle Dropdown
+    this.wrapper.addEventListener('click', (e) => {
+      // ป้องกันการเปิด Dropdown ถ้ากดที่ปุ่มลบ Chip
+      if (e.target.closest('.fa-xmark')) return
+
+      if (e.target !== this.input) {
+        this.input.focus()
+        this.toggleDropdown(true)
+      }
     })
+
+    // Input Handling
+    this.input.addEventListener('input', (e) => {
+      this.filterOptions(e.target.value)
+      this.toggleDropdown(true)
+    })
+
+    this.input.addEventListener('focus', () => this.toggleDropdown(true))
+
+    // Keyboard Nav
+    this.input.addEventListener('keydown', (e) => this.handleKeyDown(e))
+
+    // Close outside
+    document.addEventListener('click', (e) => {
+      if (!this.root.contains(e.target)) {
+        this.toggleDropdown(false)
+      }
+    })
+  }
+
+  toggleDropdown(show) {
+    if (show) {
+      this.dropdown.classList.remove('hidden')
+      this.wrapper.classList.add(
+        'ring-4',
+        'ring-emerald-50',
+        'border-emerald-500',
+      )
+      this.chevron.classList.add('rotate-180')
+      this.renderOptions()
+    } else {
+      this.dropdown.classList.add('hidden')
+      this.wrapper.classList.remove(
+        'ring-4',
+        'ring-emerald-50',
+        'border-emerald-500',
+      )
+      this.chevron.classList.remove('rotate-180')
+      this.highlightedIndex = -1
+    }
+  }
+
+  filterOptions(query) {
+    const lowerQuery = query.toLowerCase()
+    this.filteredOptions = this.options.filter((o) =>
+      o.label.toLowerCase().includes(lowerQuery),
+    )
+
+    if (this.filteredOptions.length === 0) {
+      this.optionsList.classList.add('hidden')
+      this.noDataMsg.classList.remove('hidden')
+    } else {
+      this.optionsList.classList.remove('hidden')
+      this.noDataMsg.classList.add('hidden')
+      this.highlightedIndex = 0 // Reset highlight on filter
+    }
+    this.renderOptions()
+  }
+
+  renderOptions() {
+    this.optionsList.innerHTML = ''
+    this.filteredOptions.forEach((opt, index) => {
+      const isSelected = this.selectedValues.includes(String(opt.value))
+      const isHighlighted = index === this.highlightedIndex
+
+      const li = document.createElement('li')
+      li.className = `
+        flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer text-sm mb-1 transition-all
+        ${isHighlighted ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'}
+        ${isSelected ? 'bg-emerald-50 text-emerald-700 font-medium' : ''}`
+
+      li.innerHTML = `
+        <div class="flex items-center gap-2 pointer-events-none">
+            ${opt.icon ? `<i class="${opt.icon} w-5 text-center ${isSelected ? 'text-emerald-600' : 'text-slate-400'}"></i>` : ''}
+            <span>${opt.label}</span>
+        </div>
+        ${isSelected ? '<i class="fa-solid fa-check text-emerald-600 pointer-events-none"></i>' : ''}`
+
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault()
+      })
+
+      li.addEventListener('click', (e) => {
+        e.stopPropagation()
+        e.preventDefault()
+        this.selectOption(opt)
+      })
+
+      li.addEventListener('mouseenter', () => {
+        this.highlightedIndex = index
+        Array.from(this.optionsList.children).forEach((child, i) => {
+          if (i === index) {
+            child.classList.add('bg-slate-100', 'text-slate-900')
+            child.classList.remove('text-slate-600', 'hover:bg-slate-50')
+          } else {
+            child.classList.remove('bg-slate-100', 'text-slate-900')
+            child.classList.add('text-slate-600', 'hover:bg-slate-50')
+          }
+        })
+      })
+
+      this.optionsList.appendChild(li)
+    })
+  }
+
+  selectOption(option) {
+    const val = String(option.value)
+    if (this.config.multiple) {
+      if (this.selectedValues.includes(val)) {
+        this.removeValue(val)
+      } else {
+        this.selectedValues.push(val)
+      }
+      this.input.value = ''
+      this.filterOptions('')
+    } else {
+      this.selectedValues = [val]
+      this.toggleDropdown(false)
+      this.input.blur()
+    }
+
+    this.updateUI()
+    this.triggerChange()
+
+    if (this.config.multiple) {
+      this.input.focus()
+    }
+  }
+
+  removeValue(val) {
+    this.selectedValues = this.selectedValues.filter((v) => v !== val)
+    this.updateUI()
+
+    // Fix: เรียก renderOptions เพื่ออัปเดตสถานะใน Dropdown (ลบติ๊กถูก/สีเขียวออก)
+    // ทำให้เวลา Backspace แล้ว list อัปเดตทันที
+    this.renderOptions()
+
+    this.triggerChange()
+  }
+
+  updateUI() {
+    // 1. ลบ Chips เก่าทั้งหมดออกจาก inputContent (ยกเว้น input และ icon)
+    const existingChips = this.inputContent.querySelectorAll('.chip')
+    existingChips.forEach((c) => c.remove())
+
+    if (this.selectedValues.length > 0) {
+      this.selectedValues.forEach((val) => {
+        const opt = this.options.find((o) => String(o.value) === val)
+        if (!opt) return
+
+        const chip = document.createElement('div')
+        chip.className = `chip chip-anim flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold border border-emerald-200 select-none whitespace-nowrap`
+        chip.innerHTML = `
+          <span>${opt.label}</span>
+          <i class="fa-solid fa-xmark ml-1 cursor-pointer hover:text-emerald-900 rounded-full p-0.5 text-[10px]"></i>`
+
+        chip.querySelector('i').addEventListener('click', (e) => {
+          e.stopPropagation()
+          this.removeValue(val)
+          // focus input กลับหลังลบ chip
+          this.input.focus()
+        })
+
+        // 2. แทรก Chips เข้าไป "ก่อนหน้า Input" เสมอ
+        this.inputContent.insertBefore(chip, this.input)
+      })
+
+      if (!this.config.multiple) {
+        // กรณี Single Select:
+        // ทำให้ Input เล็กลงและโปร่งใส เพื่อให้พิมพ์ Backspace ได้ แต่ไม่บัง Chip
+        this.input.style.width = '1px'
+        this.input.style.padding = '0'
+        this.input.style.minWidth = '1px'
+        this.input.placeholder = ''
+      } else {
+        // Reset style สำหรับ multiple
+        this.input.style.width = ''
+        this.input.style.padding = ''
+        this.input.style.minWidth = '20px'
+        this.input.placeholder = ''
+      }
+    } else {
+      // กรณีไม่มีค่าที่เลือก Reset กลับเป็นปกติ
+      this.input.placeholder = this.config.placeholder
+      this.input.style.width = ''
+      this.input.style.padding = ''
+      this.input.style.minWidth = '20px'
+    }
   }
 
   handleKeyDown(e) {
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
-        this.openDropdown()
         this.highlightedIndex = Math.min(
           this.highlightedIndex + 1,
           this.filteredOptions.length - 1,
         )
-        this.updateHighlight()
+        this.scrollToHighlighted()
+        this.renderOptions()
         break
       case 'ArrowUp':
         e.preventDefault()
         this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0)
-        this.updateHighlight()
+        this.scrollToHighlighted()
+        this.renderOptions()
         break
       case 'Enter':
         e.preventDefault()
@@ -111,122 +311,34 @@ class SmartSelect {
         }
         break
       case 'Backspace':
-        if (this.searchInput.value === '' && this.selectedValues.length > 0) {
-          this.removeOption(this.selectedValues[this.selectedValues.length - 1])
+        if (this.input.value === '' && this.selectedValues.length > 0) {
+          // ลบค่าตัวล่าสุด
+          this.removeValue(this.selectedValues[this.selectedValues.length - 1])
+          // เนื่องจากเราเรียก this.renderOptions() ใน removeValue แล้ว สถานะใน list จะอัปเดตเอง
         }
         break
       case 'Escape':
-        this.closeDropdown()
+        this.toggleDropdown(false)
+        this.input.blur()
         break
     }
   }
 
-  updateHighlight() {
-    const listItems = this.optionsList.querySelectorAll('li')
-    listItems.forEach((li, idx) => {
-      if (idx === this.highlightedIndex) {
-        li.classList.add('option-highlighted')
-        li.scrollIntoView({ block: 'nearest' })
-      } else {
-        li.classList.remove('option-highlighted')
-      }
-    })
-  }
-
-  openDropdown() {
-    if (this.dropdownMenu.classList.contains('hidden')) {
-      this.dropdownMenu.classList.remove('hidden')
-      this.root.classList.add('select-is-open')
-      this.filterOptions(this.searchInput.value)
+  scrollToHighlighted() {
+    const item = this.optionsList.children[this.highlightedIndex]
+    if (item) {
+      item.scrollIntoView({ block: 'nearest' })
     }
   }
 
-  closeDropdown() {
-    this.dropdownMenu.classList.add('hidden')
-    this.root.classList.remove('select-is-open')
-    this.highlightedIndex = -1
-  }
-
-  filterOptions(query = '') {
-    this.filteredOptions = this.options.filter(
-      (opt) =>
-        opt.label.toLowerCase().includes(query.toLowerCase()) &&
-        !this.selectedValues.includes(String(opt.value)),
-    )
-
-    this.optionsList.innerHTML = ''
-    this.highlightedIndex = this.filteredOptions.length > 0 ? 0 : -1
-
-    if (this.filteredOptions.length === 0) {
-      this.noData.classList.remove('hidden')
-    } else {
-      this.noData.classList.add('hidden')
-      const fragment = document.createDocumentFragment()
-      this.filteredOptions.forEach((opt, idx) => {
-        const li = document.createElement('li')
-        li.className = `px-3 py-2 text-sm cursor-pointer rounded-md transition-all flex items-center justify-between group ${idx === 0 ? 'option-highlighted' : ''}`
-        li.innerHTML = `<span>${opt.label}</span><i class="fa-solid fa-plus text-gray-200 group-hover:text-emerald-400 text-[10px]"></i>`
-        li.onmouseenter = () => {
-          this.highlightedIndex = idx
-          this.updateHighlight()
-        }
-        li.onclick = (e) => {
-          e.stopPropagation()
-          this.selectOption(opt)
-        }
-        fragment.appendChild(li)
-      })
-      this.optionsList.appendChild(fragment)
+  triggerChange() {
+    if (this.config.onSelectionChange) {
+      this.config.onSelectionChange(this.selectedValues)
     }
-  }
-
-  selectOption(opt) {
-    const value = String(opt.value)
-    if (this.config.multiple) {
-      this.selectedValues.push(value)
-    } else {
-      this.selectedValues = [value]
-      this.closeDropdown()
-    }
-    this.searchInput.value = ''
-    this.updateUI()
-    if (this.config.onSelectionChange)
-      this.config.onSelectionChange(this.getValues())
-  }
-
-  removeOption(val) {
-    this.selectedValues = this.selectedValues.filter((v) => v !== String(val))
-    this.updateUI()
-    if (this.config.onSelectionChange)
-      this.config.onSelectionChange(this.getValues())
-  }
-
-  updateUI() {
-    this.chipsList.innerHTML = ''
-    const fragment = document.createDocumentFragment()
-    this.selectedValues.forEach((val) => {
-      const opt = this.options.find((o) => String(o.value) === val)
-      if (!opt) return
-      const chip = document.createElement('div')
-      chip.className =
-        'flex items-center gap-1.5 px-2 py-1 bg-emerald-600 text-white text-[12px] font-medium rounded-md animate-in zoom-in-95 duration-200'
-      chip.innerHTML = `<span>${opt.label}</span><button type="button" class="hover:bg-emerald-800 rounded p-0.5"><i class="fa-solid fa-xmark text-[10px]"></i></button>`
-      chip.querySelector('button').onclick = (e) => {
-        e.stopPropagation()
-        this.removeOption(val)
-      }
-      fragment.appendChild(chip)
-    })
-    this.chipsList.appendChild(fragment)
-    this.searchInput.placeholder =
-      this.selectedValues.length > 0 ? '' : this.config.placeholder
-    this.filterOptions(this.searchInput.value)
   }
 
   getValues() {
-    return this.config.multiple
-      ? this.selectedValues
-      : this.selectedValues[0] || null
+    return this.selectedValues
   }
 }
 
