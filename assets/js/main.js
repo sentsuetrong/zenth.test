@@ -332,11 +332,11 @@ class SmartSelect {
       li.className = `flex items-center justify-between px-3 py-2.5 rounded-md cursor-pointer text-sm mb-1 transition-colors duration-150 list-item-anim`
       li.style.animationDelay = `${index * 0.03}s`
 
-      if (isHighlighted) li.classList.add('bg-emerald-50', 'text-emerald-700')
-      else li.classList.add('text-slate-600', 'hover:bg-slate-50')
+      if (isHighlighted) li.classList.add('bg-emerald-100', 'text-emerald-700')
+      else li.classList.add('text-slate-600', 'hover:bg-slate-100')
 
       if (isSelected) {
-        li.classList.add('bg-emerald-50/50', 'text-emerald-700', 'font-medium')
+        li.classList.add('bg-emerald-100/50', 'text-emerald-700')
         if (!isHighlighted) li.classList.remove('text-slate-600')
       }
 
@@ -359,13 +359,13 @@ class SmartSelect {
     const items = this.optionsList.children
     if (prevIndex >= 0 && items[prevIndex]) {
       const prevItem = items[prevIndex]
-      prevItem.classList.remove('bg-emerald-50', 'text-emerald-700')
-      prevItem.classList.add('text-slate-600', 'hover:bg-slate-50')
+      prevItem.classList.remove('bg-emerald-100', 'text-emerald-700')
+      prevItem.classList.add('text-slate-600', 'hover:bg-slate-100')
     }
     if (newIndex >= 0 && items[newIndex]) {
       const newItem = items[newIndex]
-      newItem.classList.remove('text-slate-600', 'hover:bg-slate-50')
-      newItem.classList.add('bg-emerald-50', 'text-emerald-700')
+      newItem.classList.remove('text-slate-600', 'hover:bg-slate-100')
+      newItem.classList.add('bg-emerald-100', 'text-emerald-700')
     }
   }
 
