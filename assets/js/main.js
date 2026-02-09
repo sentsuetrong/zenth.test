@@ -1,65 +1,161 @@
 class SmartSelect {
   constructor(id, options, config = {}) {
     this.container = document.getElementById(id)
-    this.options = options
+    this.options = Array.isArray(options) ? options : []
     this.config = {
       multiple: true,
-      placeholder: 'เลือก...',
+      placeholder: 'Select option...',
       selected: null,
+      fetchData: null,
       onSelectionChange: null,
       ...config,
     }
     this.selectedValues = []
     this.filteredOptions = []
     this.highlightedIndex = -1
+    this.isLoading = false
+    this.hasError = false
+    this.hasInitialSelectionProcessed = false
     this.init()
   }
 
   init() {
-    this.handlePreSelection()
     this.render()
     this.cache()
-    this.filteredOptions = [...this.options]
-    this.bindEvents() // Bind events once (Delegation logic is here)
-    this.updateUI()
+    if (this.config.fetchData) {
+      this.loadData()
+    } else {
+      this.filteredOptions = [...this.options]
+      this.handlePreSelection()
+      this.updateUI()
+    }
+    this.bindEvents()
+  }
+
+  async loadData() {
+    if (!this.config.fetchData) return
+
+    this.setLoading(true)
+    this.setError(false)
+    this.optionsList.innerHTML = ''
+
+    try {
+      const data = await this.config.fetchData()
+      if (!Array.isArray(data)) throw new Error('Invalid data format')
+
+      this.options = data
+      this.filteredOptions = [...this.options]
+
+      const validIds = this.options.map((o) => String(o.value))
+      this.selectedValues = this.selectedValues.filter((val) =>
+        validIds.includes(val),
+      )
+
+      this.handlePreSelection()
+      this.updateUI()
+
+      if (!this.dropdown.classList.contains('hidden')) {
+        this.renderOptions()
+      }
+    } catch (err) {
+      console.error('SmartSelect Load Error:', err)
+      this.setError(true)
+    } finally {
+      this.setLoading(false)
+    }
+  }
+
+  reload() {
+    this.loadData()
+  }
+
+  setLoading(loading) {
+    this.isLoading = loading
+    if (loading) {
+      this.loadingIndicator.classList.remove('hidden')
+      this.chevron.classList.add('hidden')
+      this.wrapper.classList.add(
+        'bg-slate-50',
+        'opacity-75',
+        'cursor-not-allowed',
+        'pointer-events-none',
+      )
+      this.input.classList.add('cursor-not-allowed')
+      this.input.disabled = true
+      this.noDataMsg.classList.add('hidden')
+      this.errorMsg.classList.add('hidden')
+    } else {
+      this.loadingIndicator.classList.add('hidden')
+      this.chevron.classList.remove('hidden')
+      this.wrapper.classList.remove(
+        'bg-slate-50',
+        'opacity-75',
+        'cursor-not-allowed',
+        'pointer-events-none',
+      )
+      this.input.classList.remove('cursor-not-allowed')
+      this.input.disabled = false
+    }
+  }
+
+  setError(isError) {
+    this.hasError = isError
+    if (isError) {
+      this.errorMsg.classList.remove('hidden')
+      this.optionsList.classList.add('hidden')
+      this.noDataMsg.classList.add('hidden')
+      if (this.dropdown.classList.contains('hidden')) this.toggleDropdown(true)
+    } else {
+      this.errorMsg.classList.add('hidden')
+      this.optionsList.classList.remove('hidden')
+    }
   }
 
   handlePreSelection() {
+    if (this.hasInitialSelectionProcessed) return
+
     const init = this.config.selected
-    if (!init) return
+    if (!init) {
+      this.hasInitialSelectionProcessed = true
+      return
+    }
+
     const raw = Array.isArray(init) ? init : [init]
     const validValues = this.options.map((o) => String(o.value))
     const filtered = raw
       .map((v) => String(v))
       .filter((v) => validValues.includes(v))
+
     this.selectedValues = this.config.multiple
       ? [...new Set(filtered)]
       : filtered[0]
         ? [filtered[0]]
         : []
+
+    this.hasInitialSelectionProcessed = true
   }
 
   render() {
     this.container.innerHTML = `
-      <div class="smart-select-root relative w-full">
-        <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-sm shadow-sm focus-within:ring-4 focus-within:ring-emerald-50 focus-within:border-emerald-500 transition-all cursor-text" id="${this.container.id}-wrapper">
-          <div class="input-content flex flex-wrap items-center gap-2 flex-1 overflow-hidden">
-            <span class="input-measure absolute invisible whitespace-pre text-sm font-medium pointer-events-none"></span>
-            <input id="${this.container.id}-input" type="text" class="search-input flex-1 min-w-12.5 max-w-full outline-none bg-transparent text-sm text-slate-700 font-medium placeholder:text-slate-400" placeholder="${this.config.placeholder}" autocomplete="off">
+      <div class="smart-select-root relative w-full group">
+          <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-emerald-100 focus-within:border-emerald-500 transition-all duration-200 cursor-text" id="${this.container.id}-wrapper">
+              <div class="input-content relative flex flex-wrap items-center gap-2 flex-1 overflow-hidden">
+                  <span class="input-measure absolute invisible whitespace-pre text-sm font-medium pointer-events-none"></span>
+                  <input id="${this.container.id}-input" type="text" class="search-input flex-1 min-w-12.5 max-w-full outline-none bg-transparent text-sm text-slate-700 font-medium placeholder:text-slate-400" placeholder="${this.config.placeholder}" autocomplete="off">
+              </div>
+              <div class="flex items-center gap-2 ml-1 min-w-5 justify-end">
+                  <span class="loading-indicator hidden text-emerald-500 animate-spin">
+                      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                  </span>
+                  <i class="fa-solid fa-chevron-down chevron-icon text-slate-400 text-xs transition-transform duration-300"></i>
+              </div>
           </div>
-          <div class="flex items-center gap-2 ml-1">
-            <i class="fa-solid fa-chevron-down chevron-icon text-slate-300 text-[10px] transition-transform duration-300 mr-1"></i>
+          <div class="dropdown-menu hidden opacity-0 translate-y-2 absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-lg shadow-xl overflow-hidden ring-1 ring-black/5 origin-top transition-all duration-200 ease-out">
+              ${this.config.multiple ? '<div class="px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] text-slate-700 uppercase tracking-wider"><span class="text-red-500 font-bold">*</span> เลือกได้แบบหลายตัวเลือก</div>' : ''}
+              <ul class="options-list max-h-60 overflow-y-auto p-1 custom-scrollbar scroll-smooth"></ul>
+              <div class="no-data hidden p-6 text-center"><div class="text-slate-300 text-3xl mb-2"><i class="fa-regular fa-folder-open"></i></div><div class="text-sm text-slate-500 font-medium">ไม่พบข้อมูล</div></div>
+              <div class="error-msg hidden p-6 text-center"><div class="text-red-300 text-3xl mb-2"><i class="fa-solid fa-circle-exclamation"></i></div><div class="text-sm text-slate-600 font-medium mb-3">โหลดข้อมูลไม่สำเร็จ</div><button type="button" class="btn-retry px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs rounded-full font-medium transition-colors"><i class="fa-solid fa-rotate-right mr-1"></i> ลองใหม่</button></div>
           </div>
-        </div>
-        
-        <div class="dropdown-menu hidden absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-sm shadow-2xl overflow-hidden ring-1 ring-black/5 transform origin-top transition-all duration-200">
-          ${this.config.multiple ? '<div class="p-2 bg-slate-50/50 border-b border-slate-100 text-[10px] text-slate-900 font-bold uppercase tracking-wider px-3">เลือกได้หลายตัวเลือก</div>' : ''}
-          <ul class="options-list max-h-62.5 overflow-y-auto p-1 custom-scrollbar"></ul>
-          <div class="no-data hidden p-8 text-center">
-            <div class="text-slate-300 text-2xl mb-2"><i class="fa-regular fa-folder-open"></i></div>
-            <div class="text-sm text-slate-500 font-medium">ไม่พบข้อมูลที่ค้นหา</div>
-          </div>
-        </div>
       </div>`
   }
 
@@ -71,13 +167,21 @@ class SmartSelect {
     this.dropdown = this.container.querySelector('.dropdown-menu')
     this.optionsList = this.container.querySelector('.options-list')
     this.noDataMsg = this.container.querySelector('.no-data')
+    this.errorMsg = this.container.querySelector('.error-msg')
+    this.btnRetry = this.container.querySelector('.btn-retry')
     this.chevron = this.container.querySelector('.chevron-icon')
+    this.loadingIndicator = this.container.querySelector('.loading-indicator')
     this.measureSpan = this.container.querySelector('.input-measure')
   }
 
   bindEvents() {
-    // 1. Wrapper Click
+    this.btnRetry.addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.reload()
+    })
+
     this.wrapper.addEventListener('click', (e) => {
+      if (this.isLoading) return
       if (e.target.closest('.fa-xmark')) return
       if (e.target !== this.input) {
         this.input.focus()
@@ -85,51 +189,44 @@ class SmartSelect {
       }
     })
 
-    // 2. Input Events
     this.input.addEventListener('input', (e) => {
       this.toggleDropdown(true)
       this.filterOptions(e.target.value)
       this.adjustInputWidth()
     })
-    this.input.addEventListener('focus', () => this.toggleDropdown(true))
-    this.input.addEventListener('keydown', (e) => this.handleKeyDown(e))
-
-    // 3. Global Click (Close outside)
-    document.addEventListener('click', (e) => {
-      if (!this.root.contains(e.target)) {
-        this.toggleDropdown(false)
-      }
+    this.input.addEventListener('focus', () => {
+      if (!this.isLoading) this.toggleDropdown(true)
     })
 
-    // --- Performance Improvement: Event Delegation for Options List ---
+    this.input.addEventListener('keydown', (e) => this.handleKeyDown(e))
 
-    // Delegation: Click Option
+    document.addEventListener('click', (e) => {
+      if (!this.root.contains(e.target)) this.toggleDropdown(false)
+    })
+
     this.optionsList.addEventListener('click', (e) => {
       e.stopPropagation()
       e.preventDefault()
+      if (this.isLoading) return
       const li = e.target.closest('li')
       if (li) {
         const index = parseInt(li.dataset.index, 10)
-        if (!isNaN(index) && this.filteredOptions[index]) {
+        if (!isNaN(index) && this.filteredOptions[index])
           this.selectOption(this.filteredOptions[index])
-        }
       }
     })
 
-    // Delegation: Mouseover (Highlight)
     this.optionsList.addEventListener('mouseover', (e) => {
+      if (this.isLoading) return
       const li = e.target.closest('li')
       if (li) {
         const index = parseInt(li.dataset.index, 10)
-        // Update highlight only if index changed
         if (index !== this.highlightedIndex) {
           this.updateHighlightUI(this.highlightedIndex, index)
           this.highlightedIndex = index
         }
       }
     })
-
-    // Prevent input blur on mousedown
     this.optionsList.addEventListener('mousedown', (e) => e.preventDefault())
   }
 
@@ -150,46 +247,51 @@ class SmartSelect {
   }
 
   toggleDropdown(show) {
+    if (this.isLoading && show) return
+
     if (show) {
       const wasHidden = this.dropdown.classList.contains('hidden')
       this.dropdown.classList.remove('hidden')
+      requestAnimationFrame(() => {
+        this.dropdown.classList.remove('opacity-0', 'translate-y-2')
+        this.dropdown.classList.add('opacity-100', 'translate-y-0')
+      })
       this.wrapper.classList.add(
-        'ring-4',
-        'ring-emerald-50',
+        'ring-2',
+        'ring-emerald-100',
         'border-emerald-500',
       )
       this.chevron.classList.add('rotate-180', 'text-emerald-500')
-      this.chevron.classList.remove('text-slate-300')
+      this.chevron.classList.remove('text-slate-400')
 
-      if (wasHidden) {
-        // Recalculate highlight only on open
-        if (this.selectedValues.length > 0) {
-          const lastSelected =
-            this.selectedValues[this.selectedValues.length - 1]
-          const idx = this.filteredOptions.findIndex(
-            (o) => String(o.value) === lastSelected,
-          )
-          this.highlightedIndex = idx !== -1 ? idx : -1
-        } else {
-          this.highlightedIndex = -1
-        }
-        this.renderOptions() // Initial render
-        this.scrollToHighlighted()
+      if (wasHidden && !this.hasError) {
+        this.filterOptions(this.input.value)
       }
     } else {
-      this.dropdown.classList.add('hidden')
+      this.dropdown.classList.remove('opacity-100', 'translate-y-0')
+      this.dropdown.classList.add('opacity-0', 'translate-y-2')
+      setTimeout(() => {
+        if (!this.dropdown.classList.contains('opacity-100'))
+          this.dropdown.classList.add('hidden')
+      }, 200)
       this.wrapper.classList.remove(
-        'ring-4',
-        'ring-emerald-50',
+        'ring-2',
+        'ring-emerald-100',
         'border-emerald-500',
       )
-      this.chevron.classList.add('text-slate-300')
+      this.chevron.classList.add('text-slate-400')
       this.chevron.classList.remove('rotate-180', 'text-emerald-500')
       this.highlightedIndex = -1
+      if (this.input.value !== '') {
+        this.input.value = ''
+        this.filterOptions('')
+        this.adjustInputWidth()
+      }
     }
   }
 
   filterOptions(query, activeValue = null) {
+    if (this.isLoading || this.hasError) return
     const lowerQuery = query.toLowerCase()
     this.filteredOptions = this.options.filter((o) =>
       o.label.toLowerCase().includes(lowerQuery),
@@ -215,96 +317,84 @@ class SmartSelect {
     if (this.highlightedIndex !== -1) this.scrollToHighlighted()
   }
 
-  // Performance: Use DocumentFragment
   renderOptions() {
     this.optionsList.innerHTML = ''
-    const fragment = document.createDocumentFragment()
+    if (this.isLoading || this.hasError) return
 
+    const fragment = document.createDocumentFragment()
     this.filteredOptions.forEach((opt, index) => {
       const isSelected = this.selectedValues.includes(String(opt.value))
       const isHighlighted = index === this.highlightedIndex
 
       const li = document.createElement('li')
-      // Store index for Event Delegation
       li.dataset.index = index
 
-      // Base classes
-      li.className = `flex items-center justify-between px-3 py-2.5 rounded-sm cursor-pointer text-sm mb-1 transition-all`
+      li.className = `flex items-center justify-between px-3 py-2.5 rounded-md cursor-pointer text-sm mb-1 transition-colors duration-150 list-item-anim`
+      li.style.animationDelay = `${index * 0.03}s`
 
-      // Dynamic classes (Separate logic for better readability)
-      if (isHighlighted) {
-        li.classList.add('bg-emerald-100', 'text-emerald-900')
-      } else {
-        li.classList.add('text-emerald-600', 'hover:bg-emerald-50')
-      }
+      if (isHighlighted) li.classList.add('bg-emerald-50', 'text-emerald-700')
+      else li.classList.add('text-slate-600', 'hover:bg-slate-50')
 
       if (isSelected) {
-        li.classList.add('bg-emerald-50', 'text-emerald-700', 'font-medium')
-        // Ensure highlight overrides select style slightly if needed, or mix them
-        if (!isHighlighted) li.classList.remove('text-emerald-600')
+        li.classList.add('bg-emerald-50/50', 'text-emerald-700', 'font-medium')
+        if (!isHighlighted) li.classList.remove('text-slate-600')
       }
 
       li.innerHTML = `
-        <div class="flex items-center gap-2 pointer-events-none">
-          ${opt.icon ? `<i class="${opt.icon} w-5 text-center ${isSelected ? 'text-emerald-600' : 'text-slate-400'}"></i>` : ''}
-          <span>${opt.label}</span>
+        <div class="flex items-center gap-3 pointer-events-none">
+            ${opt.icon ? `<div class="w-6 flex justify-center text-lg ${isSelected ? 'text-emerald-500' : 'text-slate-400'}">${opt.icon}</div>` : ''}
+            <div class="flex flex-col">
+                <span class="leading-tight">${opt.label}</span>
+                ${opt.subtitle ? `<span class="text-[10px] text-slate-400 mt-0.5">${opt.subtitle}</span>` : ''}
+            </div>
         </div>
-        ${isSelected ? '<i class="fa-solid fa-check text-emerald-600 pointer-events-none"></i>' : ''}`
-
-      // No individual event listeners here!
+        ${isSelected ? '<i class="fa-solid fa-check text-emerald-500 text-xs pointer-events-none"></i>' : ''}
+      `
       fragment.appendChild(li)
     })
-
     this.optionsList.appendChild(fragment)
   }
 
-  // Performance: Update classes without re-rendering the whole list
   updateHighlightUI(prevIndex, newIndex) {
     const items = this.optionsList.children
-
-    // Remove highlight from previous
     if (prevIndex >= 0 && items[prevIndex]) {
       const prevItem = items[prevIndex]
-      prevItem.classList.remove('bg-emerald-100', 'text-emerald-900')
-      prevItem.classList.add('text-emerald-600', 'hover:bg-emerald-50')
+      prevItem.classList.remove('bg-emerald-50', 'text-emerald-700')
+      prevItem.classList.add('text-slate-600', 'hover:bg-slate-50')
     }
-
-    // Add highlight to new
     if (newIndex >= 0 && items[newIndex]) {
       const newItem = items[newIndex]
-      newItem.classList.remove('text-emerald-600', 'hover:bg-emerald-50')
-      newItem.classList.add('bg-emerald-100', 'text-emerald-900')
+      newItem.classList.remove('text-slate-600', 'hover:bg-slate-50')
+      newItem.classList.add('bg-emerald-50', 'text-emerald-700')
     }
   }
 
   selectOption(option) {
     const val = String(option.value)
     if (this.config.multiple) {
-      if (this.selectedValues.includes(val)) {
-        this.removeValue(val)
-      } else {
-        this.selectedValues.push(val)
-      }
+      if (this.selectedValues.includes(val)) this.removeValue(val)
+      else this.selectedValues.push(val)
       this.input.value = ''
       this.filterOptions('', val)
       this.adjustInputWidth()
     } else {
-      // Single Select Logic
-      this.selectedValues = [val]
-      this.input.value = '' // FIX: Clear input for single select
-      this.toggleDropdown(false)
-      this.input.blur()
+      if (this.selectedValues.includes(val)) {
+        this.removeValue(val)
+        this.input.focus()
+      } else {
+        this.selectedValues = [val]
+        this.input.value = ''
+        this.toggleDropdown(false)
+        this.input.blur()
+      }
     }
-
     this.updateUI()
     this.triggerChange()
-
-    if (this.config.multiple) {
-      this.input.focus()
-    }
+    if (this.config.multiple) this.input.focus()
   }
 
   removeValue(val) {
+    if (this.isLoading) return
     this.selectedValues = this.selectedValues.filter((v) => v !== val)
     this.updateUI()
     this.renderOptions()
@@ -313,29 +403,34 @@ class SmartSelect {
   }
 
   updateUI() {
-    const existingChips = this.inputContent.querySelectorAll('.chip')
-    existingChips.forEach((c) => c.remove())
+    const existingChips = Array.from(
+      this.inputContent.querySelectorAll('.chip'),
+    )
+    const existingValues = existingChips.map((c) => c.dataset.value)
+
+    existingChips.forEach((chip) => {
+      if (!this.selectedValues.includes(chip.dataset.value)) {
+        const left = chip.offsetLeft
+        const top = chip.offsetTop
+        chip.style.position = 'absolute'
+        chip.style.left = `${left}px`
+        chip.style.top = `${top}px`
+        chip.classList.add('chip-exit')
+        chip.addEventListener('animationend', () => chip.remove())
+      }
+    })
+
+    this.selectedValues.forEach((val) => {
+      if (!existingValues.includes(val)) {
+        const opt = this.options.find((o) => String(o.value) === val)
+        if (opt) {
+          const chip = this.createChipElement(opt, val)
+          this.inputContent.insertBefore(chip, this.input)
+        }
+      }
+    })
 
     if (this.selectedValues.length > 0) {
-      this.selectedValues.forEach((val) => {
-        const opt = this.options.find((o) => String(o.value) === val)
-        if (!opt) return
-
-        const chip = document.createElement('div')
-        chip.className = `chip chip-anim flex items-center gap-1 px-2 py-0.5 bg-emerald-100 text-emerald-600 rounded-sm text-xs border border-emerald-200 select-none whitespace-nowrap`
-        chip.innerHTML = `
-          <span>${opt.label}</span>
-          <i class="fa-solid fa-xmark ml-1 cursor-pointer hover:text-emerald-900 rounded-full p-0.5 text-[10px]"></i>`
-
-        chip.querySelector('i').addEventListener('click', (e) => {
-          e.stopPropagation()
-          this.removeValue(val)
-          this.input.focus()
-        })
-
-        this.inputContent.insertBefore(chip, this.input)
-      })
-
       if (!this.config.multiple) {
         this.input.style.width = '1px'
         this.input.style.padding = '0'
@@ -356,49 +451,59 @@ class SmartSelect {
     }
   }
 
-  handleKeyDown(e) {
-    const maxIndex = this.filteredOptions.length - 1
+  createChipElement(opt, val) {
+    const chip = document.createElement('div')
+    chip.dataset.value = val
+    chip.className = `chip chip-enter flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-emerald-50 text-emerald-700 rounded-sm text-xs border border-emerald-100 select-none whitespace-nowrap transition-all`
+    chip.innerHTML = `
+        <span>${opt.label}</span>
+        <div class="hover:bg-emerald-200/50 rounded-sm p-0.5 cursor-pointer transition-colors flex items-center justify-center w-4 h-4">
+            <i class="fa-solid fa-xmark text-[10px]"></i>
+        </div>`
 
+    chip.querySelector('div').addEventListener('click', (e) => {
+      e.stopPropagation()
+      this.removeValue(val)
+      this.input.focus()
+    })
+    return chip
+  }
+
+  handleKeyDown(e) {
+    if (this.isLoading) return
+    const maxIndex = this.filteredOptions.length - 1
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault()
+        if (this.optionsList.classList.contains('hidden'))
+          this.toggleDropdown(true)
         const nextIndex = Math.min(this.highlightedIndex + 1, maxIndex)
-        // Performance: Don't re-render, just update styles
         this.updateHighlightUI(this.highlightedIndex, nextIndex)
         this.highlightedIndex = nextIndex
         this.scrollToHighlighted()
         break
-
       case 'ArrowUp':
         e.preventDefault()
         const prevIndex = Math.max(this.highlightedIndex - 1, 0)
-        // Performance: Don't re-render, just update styles
         this.updateHighlightUI(this.highlightedIndex, prevIndex)
         this.highlightedIndex = prevIndex
         this.scrollToHighlighted()
         break
-
       case 'Enter':
         e.preventDefault()
         if (
           this.highlightedIndex >= 0 &&
           this.filteredOptions[this.highlightedIndex]
-        ) {
+        )
           this.selectOption(this.filteredOptions[this.highlightedIndex])
-        }
         break
-
-      // FIX: ปิด Dropdown เมื่อกดปุ่ม Tab เพื่อย้าย Focus
       case 'Tab':
         this.toggleDropdown(false)
         break
-
       case 'Backspace':
-        if (this.input.value === '' && this.selectedValues.length > 0) {
+        if (this.input.value === '' && this.selectedValues.length > 0)
           this.removeValue(this.selectedValues[this.selectedValues.length - 1])
-        }
         break
-
       case 'Escape':
         this.toggleDropdown(false)
         this.input.blur()
@@ -408,15 +513,15 @@ class SmartSelect {
 
   scrollToHighlighted() {
     const item = this.optionsList.children[this.highlightedIndex]
-    if (item) {
-      item.scrollIntoView({ block: 'nearest' })
-    }
+    if (item) item.scrollIntoView({ block: 'nearest' })
   }
 
   triggerChange() {
-    if (this.config.onSelectionChange) {
+    if (this.config.onSelectionChange)
       this.config.onSelectionChange(this.selectedValues)
-    }
+  }
+  getValues() {
+    return this.selectedValues
   }
 }
 

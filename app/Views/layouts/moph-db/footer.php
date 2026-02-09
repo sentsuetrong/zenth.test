@@ -2,7 +2,7 @@
   document.addEventListener('DOMContentLoaded', function() {
     showItem("<?= isset($result) && is_object($result) ? esc($result->mou->id, 'js') : 'null' ?>")
 
-    const lawsTypes = [{
+    const lawsTypesOptions = [{
         value: '1',
         label: 'พระราชบัญญัติ'
       },
@@ -24,24 +24,28 @@
       },
     ];
 
-    new SmartSelect('laws-type', lawsTypes, {
+    new SmartSelect('laws-type', lawsTypesOptions, {
       multiple: true,
-      selected: ['1', '2'],
+      placeholder: 'เลือกประเภท...',
+      selected: [1, 2]
     });
 
-    const lawsStatus = [{
+    const lawsStatusOptions = [{
         value: '1',
-        label: 'มีผลบังคับใช้งาน'
+        label: 'มีผลบังคับใช้งาน',
+        icon: '<i class="fa-solid fa-circle text-emerald-500 text-[10px]"></i>'
       },
       {
         value: '2',
-        label: 'ยกเลิกบังคับใช้'
+        label: 'ยกเลิกบังคับใช้',
+        icon: '<i class="fa-solid fa-circle text-red-500 text-[10px]"></i>'
       },
     ];
 
-    new SmartSelect('laws-status', lawsStatus, {
+    new SmartSelect('laws-status', lawsStatusOptions, {
       multiple: false,
-      selected: '1'
+      placeholder: 'เลือกสถานะ...',
+      selected: 1
     });
   })
 </script>

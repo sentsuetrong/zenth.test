@@ -52,7 +52,7 @@
     </div>
     <!-- Search Legals Type Box -->
     <label for="laws-type-input"
-      class="mb-2 block text-sm font-bold text-emerald-600 hover:text-emerald-500 cursor-pointer">ประเภท</label>
+      class="mb-2 block text-sm font-bold text-emerald-600 hover:text-emerald-500 cursor-pointer">ประเภท <smal class="text-xs font-normal text-slate-600">(<span class="text-red-500 font-bold">*</span> หลายตัวเลือก)</smal></label>
     <div id="laws-type" class="mb-4"></div>
 
     <!-- Search Legals status Box -->

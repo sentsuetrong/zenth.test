@@ -54,6 +54,33 @@ body {
 	background: var(--color-emerald-500);
 }
 
+@keyframes enterChip {
+	from { opacity: 0; transform: scale(0.8); }
+	to { opacity: 1; transform: scale(1); }
+}
+.chip-enter {
+	animation: enterChip 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Fade Out Scale (Exit) */
+@keyframes exitChip {
+	from { opacity: 1; transform: scale(1); }
+	to { opacity: 0; transform: scale(0.8); }
+}
+.chip-exit {
+	animation: exitChip 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+	pointer-events: none; 
+}
+
+/* List Item Entry */
+@keyframes fadeInList {
+	from { opacity: 0; transform: translateY(5px); }
+	to { opacity: 1; transform: translateY(0); }
+}
+.list-item-anim {
+	animation: fadeInList 0.2s ease-out forwards;
+}
+
 .select-is-open .chevron-icon {
 	transform: rotate(180deg);
 	color: #059669;
