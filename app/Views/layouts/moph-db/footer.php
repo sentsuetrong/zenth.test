@@ -4,7 +4,8 @@
 
     const lawsTypesOptions = [{
         value: '1',
-        label: 'พระราชบัญญัติ'
+        label: 'พระราชบัญญัติ',
+        subtitle: 'พรบ',
       },
       {
         value: '2',
@@ -47,6 +48,8 @@
       placeholder: 'เลือกสถานะ...',
       selected: 1
     });
+
+    const backdrop = document.getElementById('backdrop');
   })
 </script>
 
