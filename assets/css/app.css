@@ -45,13 +45,13 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   /* background: #cbd5e1; */
-	background: var(--color-emerald-200);
+	background: var(--color-emerald-700);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   /* background: #94a3b8; */
-	background: var(--color-emerald-500);
+	background: var(--color-emerald-600);
 }
 
 @keyframes enterChip {
@@ -90,4 +90,10 @@ body {
 .option-highlighted {
 	background-color: #ecfdf5 !important;
 	color: #059669 !important;
+}
+
+.gpu-accelerated {
+	transform: translateZ(0);
+	backface-visibility: hidden;
+	perspective: 1000px;
 }

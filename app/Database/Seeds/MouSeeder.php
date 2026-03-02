@@ -22,7 +22,7 @@ class MouSeeder extends Seeder
         $db = Database::connect();
         $mou_party_builder = $db->table('mous_parties');
 
-        $mouCount = 10;
+        $mouCount = 100;
         $keywordsCountPool = [3 => 70, 4 => 20, 5 => 10];
         $partiesCountPool = [1 => 70, 2 => 20, 3 => 10];
 

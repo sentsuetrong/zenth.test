@@ -14,4 +14,4 @@
   <script src="<?= site_url('/assets/js/toastify.js') ?>"></script>
 </head>
 
-<body class="flex flex-col h-screen overflow-hidden"></body>
+<body class="custom-scrollbar overflow-x-hidden">

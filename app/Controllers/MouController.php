@@ -27,6 +27,31 @@ class MouController extends BaseController
             'system_name_en' => 'MoU - MOPH Database'
         ];
     }
+
+    /**
+     * @param array $mous
+     * @return array
+     */
+    protected function buildGroup(&$mous)
+    {
+        $groups = [];
+
+        foreach ($mous as $mou) {
+            $year = $mou['buddhistyear_effective_from'];
+            $mou_id = $mou['id'];
+
+            if (!isset($groups[$year])) {
+                $groups[$year] = [];
+            }
+
+            if (!isset($groups[$year][$mou_id])) {
+                $groups[$year][$mou_id] = $mou;
+            }
+        }
+
+        return $groups;
+    }
+
     public function index()
     {
         /**
@@ -40,8 +65,10 @@ class MouController extends BaseController
         // $db = Database::connect();
         // $data['query'] = $mouModel->withGroups()->getCompiledSelect();
         // $data['result'] = $db->query($data['query'])->getResult();
+        $query = $mouModel->withGroups()->get();
+        $mous = $query->getResultArray();
 
-        $this->data['mous_groups'] = $mouModel->withGroups()->get();
+        $this->data['mous_groups'] = $this->buildGroup($mous);
         $benchmark->stop('mous_groups');
 
         $this->data['execution_times'] = $benchmark->getTimers();

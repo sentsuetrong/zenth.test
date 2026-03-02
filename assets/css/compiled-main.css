@@ -262,6 +262,12 @@
   .inset-0 {
     inset: calc(var(--spacing) * 0);
   }
+  .top-0 {
+    top: calc(var(--spacing) * 0);
+  }
+  .top-15 {
+    top: calc(var(--spacing) * 15);
+  }
   .z-20 {
     z-index: 20;
   }
@@ -390,8 +396,11 @@
   .h-12 {
     height: calc(var(--spacing) * 12);
   }
-  .h-screen {
-    height: 100vh;
+  .h-15 {
+    height: calc(var(--spacing) * 15);
+  }
+  .h-\[calc\(100vh-60px\)\] {
+    height: calc(100vh - 60px);
   }
   .max-h-60 {
     max-height: calc(var(--spacing) * 60);
@@ -444,6 +453,10 @@
   .origin-top {
     transform-origin: top;
   }
+  .-translate-x-full {
+    --tw-translate-x: -100%;
+    translate: var(--tw-translate-x) var(--tw-translate-y);
+  }
   .translate-y-0 {
     --tw-translate-y: calc(var(--spacing) * 0);
     translate: var(--tw-translate-x) var(--tw-translate-y);
@@ -470,6 +483,9 @@
   .cursor-text {
     cursor: text;
   }
+  .resize {
+    resize: both;
+  }
   .appearance-none {
     -webkit-appearance: none;
        -moz-appearance: none;
@@ -480,9 +496,6 @@
   }
   .flex-col {
     flex-direction: column;
-  }
-  .flex-row {
-    flex-direction: row;
   }
   .flex-wrap {
     flex-wrap: wrap;
@@ -708,6 +721,9 @@
   }
   .py-3 {
     padding-block: calc(var(--spacing) * 3);
+  }
+  .pt-15 {
+    padding-top: calc(var(--spacing) * 15);
   }
   .pr-1\.5 {
     padding-right: calc(var(--spacing) * 1.5);
@@ -1186,6 +1202,23 @@
       display: none;
     }
   }
+  .lg\:ml-80 {
+    @media (width >= 64rem) {
+      margin-left: calc(var(--spacing) * 80);
+    }
+  }
+  .lg\:translate-x-0 {
+    @media (width >= 64rem) {
+      --tw-translate-x: calc(var(--spacing) * 0);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
+    }
+  }
+  .lg\:shadow-none {
+    @media (width >= 64rem) {
+      --tw-shadow: 0 0 #0000;
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
   .forced-colors\:appearance-auto {
     @media (forced-colors: active) {
       -webkit-appearance: auto;
@@ -1226,11 +1259,11 @@ body {
   background: var(--color-gray-100);
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-emerald-200);
+  background: var(--color-emerald-700);
   border-radius: 3px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-emerald-500);
+  background: var(--color-emerald-600);
 }
 @keyframes enterChip {
   from {
@@ -1279,6 +1312,11 @@ body {
 .option-highlighted {
   background-color: #ecfdf5 !important;
   color: #059669 !important;
+}
+.gpu-accelerated {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 @property --tw-translate-x {
   syntax: "*";

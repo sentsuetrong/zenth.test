@@ -2,28 +2,28 @@
 
 <?= $this->section('content') ?>
 
-<div id="main-wrapper" class="relative w-full h-screen flex flex-row overflow-hidden">
-  <aside id="sidebar-left" class="custom-scrollbar relative max-w-80 w-full bg-white border-r border-gray-200 flex flex-col grow item-center justify-between overflow-y-scroll overflow-x-hidden z-20">
-    <!-- Advanced Search Controller -->
-    <?= $this->include('moph-db/mou/advanced_searchbox') ?>
+<aside id="sidebar-left" class="custom-scrollbar gpu-accelerated fixed top-15 max-w-80 w-full h-[calc(100vh-60px)] bg-white border-r border-gray-200 -translate-x-full lg:translate-x-0 shadow-xl lg:shadow-none flex flex-col grow item-center justify-between overflow-y-scroll overflow-x-hidden z-20">
+  <!-- Advanced Search Controller -->
+  <?= $this->include('moph-db/mou/advanced_searchbox') ?>
 
-    <p class="p-4 pb-2 text-gray-600">
-      <small>ผลการค้นหา (<?= isset($execution_times['mous_groups']) ? $execution_times['mous_groups']['duration'] : '0.0000' ?> วินาที)</small>
+  <p class="p-4 pb-2 text-gray-600">
+    <small>ผลการค้นหา (<?= isset($execution_times['mous_groups']) ? $execution_times['mous_groups']['duration'] : '0.0000' ?> วินาที)</small>
+  </p>
+  <!-- Sidebar Footer -->
+  <div class="p-2 border-t border-gray-200 text-center text-xs text-gray-400">
+    <img
+      class="w-60 pb-2 mx-auto"
+      src="<?= site_url('/assets/Logo-LAD-OPS-MOPH.png') ?>"
+      alt="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>"
+      title="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>">
+    <p title="©<?= date('Y') ?>&nbsp;<?= isset($system_name_en) ? htmlspecialchars($system_name_en) : 'MOPH MOU DATABASE' ?>">
+      ©<?= date('Y') + 543 ?>&nbsp;<?= isset($system_name) ? $system_name : 'ระบบสืบค้นบันทึกความเข้าใจและความร่วมมือ (MoU)' ?>
+      |&nbsp;<?= isset($agency_name) ? htmlspecialchars($agency_name) : 'กองกฎหมาย สำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข' ?>
     </p>
-    <!-- Sidebar Footer -->
-    <div class="p-2 border-t border-gray-200 text-center text-xs text-gray-400">
-      <img
-        class="w-60 pb-2 mx-auto"
-        src="<?= site_url('/assets/Logo-LAD-OPS-MOPH.png') ?>"
-        alt="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>"
-        title="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>">
-      <p title="©<?= date('Y') ?>&nbsp;<?= isset($system_name_en) ? htmlspecialchars($system_name_en) : 'MOPH MOU DATABASE' ?>">
-        ©<?= date('Y') + 543 ?>&nbsp;<?= isset($system_name) ? $system_name : 'ระบบสืบค้นบันทึกความเข้าใจและความร่วมมือ (MoU)' ?>
-        |&nbsp;<?= isset($agency_name) ? htmlspecialchars($agency_name) : 'กองกฎหมาย สำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข' ?>
-      </p>
-    </div>
-  </aside>
+  </div>
+</aside>
 
+<div id="main-wrapper" class="min-h-screen lg:ml-80 pt-15 flex flex-col transition-all duration-300">
   <main class="min-h-screen flex flex-col transition-all duration-300">
     <div class="breadcrumb-wrapper p-2 flex items-center">
       <button id="btn-sidebar" type="button" onclick="toggleSidebar()" class="p-2 mr-2 md:hidden flex items-center cursor-pointer">

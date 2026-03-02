@@ -1,6 +1,6 @@
 <?= $this->include('layouts/moph-db/header') ?>
 
-<div id="header-bar" class="relative bg-white shadow-md flex z-30">
+<div id="header-bar" class="fixed top-0 w-full h-15 bg-white shadow-md flex z-30">
   <!-- Logo -->
   <div class="flex items-center p-2 max-w-full w-full">
     <div class="flex items-center shrink-0 gap-3">

@@ -956,7 +956,7 @@ function showItem(itemId = null) {
   }
 }
 
-function toggleSidebar() {
+function toggleSidebar(forceClose = false) {
   sidebar.classList.toggle('open')
 
   if (sidebar.classList.contains('open')) {
@@ -964,6 +964,15 @@ function toggleSidebar() {
   } else {
     sidebarButton.classList.remove('active')
   }
-
-  console.info('click!')
 }
+
+let resizeTimeout
+window.addEventListener('resize', () => {
+  if (resizeTimeout) cancelAnimationFrame(resizeTimeout)
+  resizeTimeout = requestAnimationFrame(() => {
+    if (window.innerWidth >= 1024) {
+      toggleSidebar(true) // Reset sidebar on desktop
+      els.mobileMenuDropdown.classList.add('hidden')
+    }
+  })
+})
