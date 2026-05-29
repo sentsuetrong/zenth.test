@@ -13,6 +13,7 @@ class MouModel extends Model
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
+        'file_uuid',
         'full_title',
         'title',
         'entity_name',
@@ -54,19 +55,7 @@ class MouModel extends Model
 
     public function withGroups()
     {
-        /* return $this->select('mous.*')
-            ->select("GROUP_CONCAT(p.id SEPARATOR ',') parties_ids")
-            ->select("GROUP_CONCAT(p.name SEPARATOR ' และ ') parties_names")
-            ->select("COUNT(p.id) parties_count")
-            ->select("YEAR(mous.effective_from) + 543 buddhistyear_effective_from")
-            ->select("YEAR(mous.effective_to) + 543 buddhistyear_effective_to")
-            ->join('mous_parties mp', 'mous.id = mp.mou_id', 'left')
-            ->join('parties p', 'p.id = mp.party_id', 'left')
-            ->groupBy('mous.id')
-            ->orderBy('buddhistyear_effective_from DESC'); */
-
-        $builder = $this->builder();
-        $builder->select('mous.*')
+        return $this->select('mous.*')
             ->select("GROUP_CONCAT(p.id SEPARATOR ',') parties_ids")
             ->select("GROUP_CONCAT(p.name SEPARATOR ' และ ') parties_names")
             ->select("COUNT(p.id) parties_count")
@@ -76,7 +65,21 @@ class MouModel extends Model
             ->join('parties p', 'p.id = mp.party_id', 'left')
             ->groupBy('mous.id')
             ->orderBy('mous.effective_from DESC');
+    }
 
-        return $builder;
+    /**
+     * Fetch a single MOU with its associated parties
+     */
+    public function findWithParties(int $id)
+    {
+        return $this->select('mous.*')
+            ->select("GROUP_CONCAT(p.name SEPARATOR ', ') parties_names")
+            ->select("YEAR(effective_from) + 543 buddhistyear_effective_from")
+            ->select("YEAR(effective_to) + 543 buddhistyear_effective_to")
+            ->join('mous_parties mp', 'mous.id = mp.mou_id', 'left')
+            ->join('parties p', 'p.id = mp.party_id', 'left')
+            ->where('mous.id', $id)
+            ->groupBy('mous.id')
+            ->first();
     }
 }

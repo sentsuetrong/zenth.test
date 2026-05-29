@@ -7,25 +7,44 @@ use App\Models\MouModel;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\Debug\Timer;
 use CodeIgniter\HTTP\IncomingRequest;
-use CodeIgniter\HTTP\ResponseInterface;
-use Config\Database;
 
 class MouController extends BaseController
 {
     use ResponseTrait;
-    public $data;
-    public function __construct()
+
+    public function index()
     {
-        $this->data = [
-            'agency_name' => 'กองกฎหมาย - สำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข',
-            'agency_name_en' => 'Legal Affairs Division - Office of the Permanent Secretary for Ministry Of Public Health',
+        /**
+         * @var Timer $benchmark
+         */
+        $benchmark = service('timer');
 
-            'agency_short_name' => 'กองกฎหมาย สป.สธ.',
-            'agency_short_name_en' => 'Legal Affairs Division - OPS MOPH',
+        $benchmark->start('mous_groups');
+        $mouModel = new MouModel();
 
-            'system_name' => 'คลังข้อมูลเกี่ยวกับบันทึกความร่วมมือหรือบันทึกความเข้าใจ (MoU)',
-            'system_name_en' => 'MoU - MOPH Database'
-        ];
+        // Handle search
+        $searchTerm = $this->request->getVar('q');
+        $builder = $mouModel->withGroups();
+
+        if ($searchTerm) {
+            $builder->groupStart()
+                ->like('mous.title', $searchTerm)
+                ->orLike('mous.full_title', $searchTerm)
+                ->orLike('mous.keywords', $searchTerm)
+                ->groupEnd();
+        }
+
+        $query = $builder->get();
+        $mous = $query->getResultArray();
+
+        $this->data['mous_groups'] = $this->buildGroup($mous);
+        $this->data['search_term'] = $searchTerm;
+        
+        $benchmark->stop('mous_groups');
+
+        $this->data['execution_times'] = $benchmark->getTimers();
+
+        return view('moph-db/mou/index', $this->data);
     }
 
     /**
@@ -37,7 +56,7 @@ class MouController extends BaseController
         $groups = [];
 
         foreach ($mous as $mou) {
-            $year = $mou['buddhistyear_effective_from'];
+            $year = $mou['buddhistyear_effective_from'] ?? 'ไม่ระบุ';
             $mou_id = $mou['id'];
 
             if (!isset($groups[$year])) {
@@ -52,35 +71,18 @@ class MouController extends BaseController
         return $groups;
     }
 
-    public function index()
+    public function show(int $id)
     {
-        /**
-         * @var Timer $benchmark
-         */
-        $benchmark = service('timer');
-
-        $benchmark->start('mous_groups');
         $mouModel = new MouModel();
+        $mou = $mouModel->findWithParties($id);
 
-        // $db = Database::connect();
-        // $data['query'] = $mouModel->withGroups()->getCompiledSelect();
-        // $data['result'] = $db->query($data['query'])->getResult();
-        $query = $mouModel->withGroups()->get();
-        $mous = $query->getResultArray();
+        if (!$mou) {
+            return redirect()->to(site_url('moph-db/mou'))->with('error', 'ไม่พบข้อมูล MOU');
+        }
 
-        $this->data['mous_groups'] = $this->buildGroup($mous);
-        $benchmark->stop('mous_groups');
+        $this->data['mou'] = $mou;
+        $this->data['title'] = $mou['title'] ?: 'รายละเอียด MOU';
 
-        $this->data['execution_times'] = $benchmark->getTimers();
-
-        return view('moph-db/mou/index', $this->data);
-    }
-
-    public function create()
-    {
-        /** @var IncomingRequest $request */
-        $request = service('request');
-
-        return $this->respond([]);
+        return view('moph-db/mou/view', $this->data);
     }
 }

@@ -25,7 +25,10 @@ abstract class BaseController extends Controller
      * The creation of dynamic property is deprecated in PHP 8.2.
      */
 
-    // protected $session;
+    /**
+     * @var array
+     */
+    protected $data = [];
 
     /**
      * @return void
@@ -34,12 +37,24 @@ abstract class BaseController extends Controller
     {
         // Load here all helpers you want to be available in your controllers that extend BaseController.
         // Caution: Do not put the this below the parent::initController() call below.
-        // $this->helpers = ['form', 'url'];
+        $this->helpers = ['url', 'html', 'form'];
 
         // Caution: Do not edit this line.
         parent::initController($request, $response, $logger);
 
         // Preload any models, libraries, etc, here.
         // $this->session = service('session');
+
+        // Common Metadata
+        $this->data = [
+            'agency_name' => 'กองกฎหมาย - สำนักงานปลัดกระทรวงสาธารณสุข กระทรวงสาธารณสุข',
+            'agency_name_en' => 'Legal Affairs Division - Office of the Permanent Secretary for Ministry Of Public Health',
+
+            'agency_short_name' => 'กองกฎหมาย สป.สธ.',
+            'agency_short_name_en' => 'Legal Affairs Division - OPS MOPH',
+
+            'system_name' => 'คลังข้อมูลเกี่ยวกับบันทึกความร่วมมือหรือบันทึกความเข้าใจ (MoU)',
+            'system_name_en' => 'MoU - MOPH Database'
+        ];
     }
 }

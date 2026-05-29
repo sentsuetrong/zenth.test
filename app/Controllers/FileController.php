@@ -20,60 +20,81 @@ class FileController extends BaseController
         /** @var Uuid $uuid */
         $uuid = service('uuid');
 
+        $validationRule = [
+            'file' => [
+                'label' => 'Image File',
+                'rules' => [
+                    'uploaded[file]',
+                    'max_size[file,10240]', // 10MB per chunk is huge, but let's set a limit
+                ],
+            ],
+        ];
+
+        if (!$this->validate($validationRule)) {
+            return $this->fail($this->validator->getErrors());
+        }
+
         $dzuuid = $request->getPost('dzuuid');
-        $chunkIndex = $request->getPost('dzchunkindex');
-        $totalChunks = $request->getPost('dztotalchunkcount');
+        $chunkIndex = (int) $request->getPost('dzchunkindex');
+        $totalChunks = (int) ($request->getPost('dztotalchunkcount') ?? 1);
         $totalFileSize = $request->getPost('dztotalfilesize');
         $file = $request->getFile('file');
 
-        if ($totalChunks === null) {
-            $totalChunks = 1;
-            $chunkIndex = 0;
+        if (!$file || !$file->isValid()) {
+            return $this->fail('ไฟล์ไม่ถูกต้องหรือเซสชันการอัปโหลดหมดอายุ');
         }
 
-        if (!$file || !$file->isValid())
-            return $this->fail('Invalid File');
-
         $fileModel = new FileModel();
+        
+        // Find or create file metadata
+        $existingFile = $fileModel->where('upload_session_id', $dzuuid)->first();
 
-        $existingFile = $fileModel
-            ->where('upload_session_id', $dzuuid)
-            ->first();
-
-        $fileUuid = isset($existingFile['uuid']) ? $existingFile['uuid'] : $fileModel->insert([
-            'uuid' => $uuid->uuid4()->toString(),
-            'filename' => $file->getClientName(),
-            'upload_session_id' => $dzuuid,
-            'mime_type' => $file->getMimeType(),
-            'file_size' => $totalFileSize,
-            'is_public' => 1,
-        ], true);
-
-        log_message('debug', $fileUuid);
+        if (!$existingFile) {
+            $fileUuid = $fileModel->insert([
+                'uuid' => $uuid->uuid4()->toString(),
+                'filename' => $file->getClientName(),
+                'upload_session_id' => $dzuuid,
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $totalFileSize,
+                'is_public' => 1,
+            ], true);
+        } else {
+            $fileUuid = $existingFile['uuid'];
+        }
 
         $chunkModel = new FileChunkModel();
-        $chunkData = file_get_contents($file->getTempName());
-
+        
+        // Check if this chunk already exists to avoid duplication
         $existingChunk = $chunkModel
             ->where('file_uuid', $fileUuid)
             ->where('chunk_order', $chunkIndex)
-            ->countAllResults();
+            ->first();
 
-        if ($existingChunk === 0)
+        if (!$existingChunk) {
+            $chunkData = file_get_contents($file->getTempName());
             $chunkModel->insert([
                 'file_uuid' => $fileUuid,
                 'chunk_order' => $chunkIndex,
                 'chunk_data' => $chunkData
             ]);
+        }
 
-        $uploadedCount = $chunkModel
-            ->where('file_uuid', $fileUuid)
-            ->countAllResults();
+        $uploadedCount = $chunkModel->where('file_uuid', $fileUuid)->countAllResults();
 
-        if ($uploadedCount >= $totalChunks)
-            return $this->respond(['status' => 'completed', 'file_uuid' => $fileUuid]);
+        if ($uploadedCount >= $totalChunks) {
+            // All chunks received
+            return $this->respond([
+                'status' => 'completed', 
+                'file_uuid' => $fileUuid,
+                'message' => 'การอัปโหลดเสร็จสมบูรณ์'
+            ]);
+        }
 
-        return $this->respond(['status' => 'chunk_received', 'chunk_index' => $chunkIndex]);
+        return $this->respond([
+            'status' => 'chunk_received', 
+            'chunk_index' => $chunkIndex,
+            'progress' => round(($uploadedCount / $totalChunks) * 100, 2)
+        ]);
     }
 
     public function index()

@@ -1,6 +1,8 @@
 class SmartSelect {
   constructor(id, options, config = {}) {
     this.container = document.getElementById(id)
+    if (!this.container) return
+    
     // รับข้อมูลมาแล้ว Process ทันทีเพื่อเตรียม Search String
     this.options = Array.isArray(options) ? this.processData(options) : []
     this.config = {

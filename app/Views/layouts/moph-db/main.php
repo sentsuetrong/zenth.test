@@ -8,12 +8,12 @@
         <i class="fa-solid fa-handshake"></i>
       </div>
       <a class="hidden md:block" href="#">
-        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= !isset($system_name_en) ? $system_name_en : 'MOPH DATABASE' ?></h1>
-        <p class="text-xs text-gray-500 truncate"><?= !isset($system_name) ? $system_name : 'ระบบคลังข้อมูล กระทรวงสาธารณสุข' ?></p>
+        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= isset($system_name_en) ? $system_name_en : 'MOPH DATABASE' ?></h1>
+        <p class="text-xs text-gray-500 truncate"><?= isset($system_name) ? $system_name : 'ระบบคลังข้อมูล กระทรวงสาธารณสุข' ?></p>
       </a>
       <a class="md:hidden block" href="#">
-        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= !isset($system_name_en) ? $system_name_en : 'MOPH DB' ?></h1>
-        <p class="text-xs text-gray-500 truncate"><?= !isset($system_name) ? $system_name : 'ระบบคลังข้อมูล สธ.' ?></p>
+        <h1 class="text-xl font-bold text-emerald-800 uppercase"><?= isset($system_name_en) ? $system_name_en : 'MOPH DB' ?></h1>
+        <p class="text-xs text-gray-500 truncate"><?= isset($system_name) ? $system_name : 'ระบบคลังข้อมูล สธ.' ?></p>
       </a>
     </div>
   </div>

@@ -13,7 +13,7 @@
   <div class="p-2 border-t border-gray-200 text-center text-xs text-gray-400">
     <img
       class="w-60 pb-2 mx-auto"
-      src="<?= site_url('/assets/Logo-LAD-OPS-MOPH.png') ?>"
+      src="<?= base_url('/assets/Logo-LAD-OPS-MOPH.png') ?>"
       alt="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>"
       title="Logo <?= isset($agency_short_name) ? htmlspecialchars($agency_short_name) : '' ?>, Logo <?= isset($agency_short_name_en) ? htmlspecialchars($agency_short_name_en) : '' ?>">
     <p title="©<?= date('Y') ?>&nbsp;<?= isset($system_name_en) ? htmlspecialchars($system_name_en) : 'MOPH MOU DATABASE' ?>">
@@ -64,7 +64,7 @@
               <div class="py-2 space-y-1 border-l-2 border-gray-100 ml-4 pl-2">
                 <?php if (isset($mous)): ?>
                   <?php foreach ($mous as $mou): ?>
-                    <a href="<?= site_url('/widget/mou/' . $mou['id']) ?>" data-id="<?= $mou['id'] ?>" onclick="showItem(<?= $mou['id'] ?>); return false"
+                    <a href="<?= site_url('moph-db/mou/' . $mou['id']) ?>" data-id="<?= $mou['id'] ?>" 
                       class="reactive-link item<?= (isset($mou_id) && $mou['id'] === $mou_id) ? ' active' : '' ?> px-3 py-2 text-xs rounded-md transition group flex items-start">
                       <i class="fa-solid fa-file-lines mt-0.5 mr-2"></i>
                       <span class="line-clamp-2 truncate inline-block"><?= isset($mou['full_title']) ? esc($mou['full_title']) : esc($mou['title']) ?></span>
