@@ -124,7 +124,7 @@
       maxFiles: 1,
       chunking: true,
       forceChunking: true,
-      chunkSize: 1024 * 1024, // 1MB chunks
+      chunkSize: 512 * 1024, // 512KB chunks
       parallelChunkUploads: false,
       retryChunks: true,
       retryChunksLimit: 3,

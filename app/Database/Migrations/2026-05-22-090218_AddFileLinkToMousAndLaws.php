@@ -6,6 +6,12 @@ use CodeIgniter\Database\Migration;
 
 class AddFileLinkToMousAndLaws extends Migration
 {
+    public function __construct()
+    {
+        $this->DBGroup = (ENVIRONMENT === 'testing' || (is_cli() && in_array('tests', $_SERVER['argv'] ?? []))) ? 'tests' : 'default';
+        parent::__construct();
+    }
+
     public function up()
     {
         $fields = [

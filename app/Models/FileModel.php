@@ -14,12 +14,17 @@ class FileModel extends UuidModel
     protected $useSoftDeletes   = true;
     protected $protectFields    = true;
     protected $allowedFields    = [
+        'uuid',
         'filename',
+        'file_hash',
+        'storage_type',
         'container_id',
         'upload_session_id',
         'mime_type',
         'file_size',
         'is_public',
+        'view_count',
+        'download_count',
         'password_hash',
         'published_at'
     ];

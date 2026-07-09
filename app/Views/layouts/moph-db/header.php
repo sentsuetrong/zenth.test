@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="<?= base_url('/assets/css/compiled-main.css?v=' . time()) ?>">
   <link rel="stylesheet" href="<?= base_url('/assets/css/toastify.min.css') ?>">
 
-  <script src="<?= base_url('/assets/js/main.js') ?>"></script>
+  <script src="<?= base_url('/assets/js/main.js?v=' . time()) ?>"></script>
   <script src="<?= base_url('/assets/js/toastify.js') ?>"></script>
 </head>
 

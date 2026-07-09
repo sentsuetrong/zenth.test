@@ -7,7 +7,7 @@ use CodeIgniter\Model;
 class FileChunkModel extends Model
 {
     protected $table            = 'file_chunks';
-    // protected $primaryKey       = 'id';
+    protected $primaryKey       = 'file_uuid';
     protected $useAutoIncrement = false;
     protected $returnType       = 'array';
     protected $useSoftDeletes   = false;

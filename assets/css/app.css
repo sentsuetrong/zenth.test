@@ -97,3 +97,28 @@ body {
 	backface-visibility: hidden;
 	perspective: 1000px;
 }
+
+/* Dropzone Custom Overrides */
+.dropzone {
+  min-height: auto !important;
+  border: 2px dashed #cbd5e1 !important; /* gray-300 */
+  background-color: #f8fafc !important; /* slate-50 */
+  border-radius: 1rem !important;
+  padding: 1.5rem 1rem !important;
+  transition: all 0.2s ease-in-out !important;
+  text-align: center !important;
+  cursor: pointer !important;
+}
+
+.dropzone:hover {
+  border-color: #10b981 !important; /* emerald-500 */
+  background-color: rgba(16, 185, 129, 0.04) !important;
+}
+
+.dropzone .dz-message {
+  margin: 1.5em 0 !important;
+}
+
+.dropzone .dz-preview {
+  display: none !important; /* We build our own modern queue list, so hide dropzone default previews! */
+}
