@@ -51,7 +51,7 @@ class FileController extends BaseController
         $allowedExtensions = array_map('trim', explode(',', strtolower($allowedExtensionsStr)));
         $maxFileSizeMB = (int)$settingModel->getSetting('max_file_size', '10');
         
-        $clientName = $file->getClientName();
+        $clientName = $request->getPost('dzfilename') ?: $file->getClientName();
         $ext = strtolower(pathinfo($clientName, PATHINFO_EXTENSION));
         if (!in_array($ext, $allowedExtensions, true)) {
             return $this->fail('ประเภทไฟล์ .' . $ext . ' ไม่ได้รับอนุญาตให้อัปโหลด (รองรับเฉพาะ: ' . str_replace(',', ', ', $allowedExtensionsStr) . ')');
@@ -68,6 +68,44 @@ class FileController extends BaseController
 
         if (!$existingFile) {
             $containerId = $request->getPost('parent_id') ?: null;
+            $relativePath = $request->getPost('relative_path') ?: '';
+
+            if (!empty($relativePath)) {
+                $relativePath = str_replace('\\', '/', $relativePath);
+                $parts = explode('/', $relativePath);
+                $folderParts = array_slice($parts, 0, -1);
+
+                if (!empty($folderParts)) {
+                    $containerModel = new \App\Models\FileContainerModel();
+                    $currentParentId = $containerId ? (int)$containerId : null;
+
+                    foreach ($folderParts as $folderName) {
+                        $folderName = trim($folderName);
+                        if ($folderName === '') {
+                            continue;
+                        }
+
+                        $existingFolder = $containerModel
+                            ->where('name', $folderName)
+                            ->where('parent_id', $currentParentId)
+                            ->first();
+
+                        if ($existingFolder) {
+                            $currentParentId = (int)$existingFolder['id'];
+                        } else {
+                            $newFolderId = $containerModel->insert([
+                                'uuid' => $uuid->uuid4()->toString(),
+                                'name' => $folderName,
+                                'parent_id' => $currentParentId
+                            ], true);
+
+                            $currentParentId = (int)$newFolderId;
+                        }
+                    }
+                    $containerId = $currentParentId;
+                }
+            }
+
             $storageType = $request->getPost('storage_type') ?: 'physical';
             if (!in_array($storageType, ['database', 'physical'], true)) {
                 $storageType = 'physical';
@@ -75,7 +113,7 @@ class FileController extends BaseController
 
             $fileUuid = $fileModel->insert([
                 'uuid' => $uuid->uuid4()->toString(),
-                'filename' => $file->getClientName(),
+                'filename' => $clientName,
                 'upload_session_id' => $dzuuid,
                 'mime_type' => $file->getMimeType(),
                 'file_size' => $totalFileSize,
@@ -771,8 +809,8 @@ class FileController extends BaseController
         $fileModel = new FileModel();
         $chunkModel = new FileChunkModel();
 
-        $uuids = $this->request->getPost('uuids') ?: [];
-        $folderIds = $this->request->getPost('folder_ids') ?: [];
+        $uuids = $this->request->getVar('uuids') ?: [];
+        $folderIds = $this->request->getVar('folder_ids') ?: [];
 
         if (empty($uuids) && empty($folderIds)) {
             return $this->fail('กรุณาเลือกไฟล์หรือโฟลเดอร์ที่ต้องการดาวน์โหลด');
@@ -1070,8 +1108,18 @@ class FileController extends BaseController
     public function index()
     {
         $containerModel = new \App\Models\FileContainerModel();
+        $settingModel = new \App\Models\SettingModel();
+
         $this->data['root_folders'] = $containerModel->where('parent_id', null)->findAll();
         $this->data['title'] = 'จัดการคลังไฟล์';
+
+        // Load allowed extensions dynamically
+        $allowedExtensionsStr = $settingModel->getSetting('allowed_extensions', 'pdf');
+        $extensionsArray = array_map(function($ext) {
+            $ext = trim($ext);
+            return $ext ? '.' . ltrim($ext, '.') : '';
+        }, explode(',', $allowedExtensionsStr));
+        $this->data['allowed_extensions_list'] = implode(',', array_filter($extensionsArray));
 
         return view('admin/upload', $this->data);
     }

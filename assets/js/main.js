@@ -879,6 +879,56 @@ function toggleInfoSection() {
   }
 }
 
+function showToast(message, type = 'success') {
+  let style = {};
+  let icon = '';
+  
+  switch(type) {
+    case 'success':
+      style = { background: 'rgba(16, 185, 129, 0.95)', color: '#ffffff' };
+      icon = '<i class="fa-solid fa-circle-check mr-2 text-white text-sm"></i>';
+      break;
+    case 'danger':
+    case 'error':
+      style = { background: 'rgba(239, 68, 68, 0.95)', color: '#ffffff' };
+      icon = '<i class="fa-solid fa-circle-xmark mr-2 text-white text-sm"></i>';
+      break;
+    case 'warning':
+      style = { background: 'rgba(245, 158, 11, 0.95)', color: '#ffffff' };
+      icon = '<i class="fa-solid fa-triangle-exclamation mr-2 text-white text-sm"></i>';
+      break;
+    case 'info':
+      style = { background: 'rgba(59, 130, 246, 0.95)', color: '#ffffff' };
+      icon = '<i class="fa-solid fa-circle-info mr-2 text-white text-sm"></i>';
+      break;
+    default:
+      style = { background: 'rgba(30, 41, 59, 0.95)', color: '#ffffff' };
+      icon = '<i class="fa-solid fa-bell mr-2 text-white text-sm"></i>';
+  }
+  
+  style = {
+    ...style,
+    borderRadius: '16px',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    backdropFilter: 'blur(8px)',
+    webkitBackdropFilter: 'blur(8px)',
+    padding: '12px 24px',
+    fontWeight: '600',
+    fontSize: '13px'
+  };
+
+  Toastify({
+    text: `${icon} ${message}`,
+    duration: 3000,
+    close: true,
+    gravity: 'bottom',
+    position: 'center',
+    style: style,
+    escapeMarkup: false
+  }).showToast();
+}
+
 async function copyLink() {
   const copyText = document.getElementById('share-link-input');
   const textToCopy = copyText ? copyText.value : '';
@@ -906,29 +956,9 @@ async function copyLink() {
   }
 
   if (success) {
-    Toastify({
-      text: 'คัดลอกลิงก์เรียบร้อยแล้ว!',
-      duration: 3000,
-      close: true,
-      gravity: 'bottom',
-      position: 'center',
-      stopOnFocus: true,
-      style: {
-        background: 'linear-gradient(to right, #00b09b, #96c93d)',
-      },
-    }).showToast();
+    showToast('คัดลอกลิงก์เรียบร้อยแล้ว!', 'success');
   } else {
-    Toastify({
-      text: 'ไม่สามารถคัดลอกลิงก์ได้อัตโนมัติ กรุณาคัดลอกด้วยตนเอง!',
-      duration: 3000,
-      close: true,
-      gravity: 'bottom',
-      position: 'center',
-      stopOnFocus: true,
-      style: {
-        background: 'linear-gradient(to right, #ad46ff, #f6339a)',
-      },
-    }).showToast();
+    showToast('ไม่สามารถคัดลอกลิงก์ได้อัตโนมัติ กรุณาคัดลอกด้วยตนเอง!', 'danger');
   }
 }
 
@@ -1181,6 +1211,9 @@ class FileManager {
   clearSelection() {
     this.selectedFileUuids.clear();
     this.selectedFolderIds.clear();
+    const selectAllCheckbox = document.getElementById('fm-select-all');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    this.renderFloatingBar();
   }
 
   updateMasterCheckboxState() {
@@ -1242,21 +1275,29 @@ class FileManager {
 
   showLoading() {
     this.listContent.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-16 text-gray-500">
-        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-600 mb-3"></i>
-        <p class="text-sm">กำลังโหลดข้อมูลคลังไฟล์...</p>
-      </div>
+      <tr>
+        <td colspan="5" class="py-16 text-center">
+          <div class="flex flex-col items-center justify-center text-gray-500">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-600 mb-3"></i>
+            <p class="text-sm">กำลังโหลดข้อมูลคลังไฟล์...</p>
+          </div>
+        </td>
+      </tr>
     `;
     this.pagination.innerHTML = '';
   }
 
   showError() {
     this.listContent.innerHTML = `
-      <div class="flex flex-col items-center justify-center py-16 text-red-500">
-        <i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i>
-        <p class="text-sm font-medium">เกิดข้อผิดพลาดในการโหลดข้อมูลไฟล์</p>
-        <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition cursor-pointer">โหลดใหม่</button>
-      </div>
+      <tr>
+        <td colspan="5" class="py-16 text-center">
+          <div class="flex flex-col items-center justify-center text-red-500">
+            <i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i>
+            <p class="text-sm font-medium">เกิดข้อผิดพลาดในการโหลดข้อมูลไฟล์</p>
+            <button onclick="window.location.reload()" class="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg transition cursor-pointer">โหลดใหม่</button>
+          </div>
+        </td>
+      </tr>
     `;
     this.pagination.innerHTML = '';
   }
@@ -1569,76 +1610,7 @@ class FileManager {
       });
     }
 
-    // 6. Sidebar Folder tree delegated clicking
-    const sidebarFolderTree = document.getElementById('sidebar-folder-tree');
-    if (sidebarFolderTree) {
-      sidebarFolderTree.addEventListener('click', (e) => {
-        const link = e.target.closest('.fm-sidebar-folder');
-        const toggleNode = e.target.closest('.fm-folder-toggle-btn');
-        
-        if (toggleNode && link) {
-          e.preventDefault();
-          e.stopPropagation();
-          const folderId = link.dataset.id;
-          const childContainer = document.getElementById(`sidebar-folder-children-${folderId}`);
-          const toggleIcon = toggleNode.querySelector('i');
-          
-          let expandedFolders = [];
-          try {
-            expandedFolders = JSON.parse(this.getCookie('fm_expanded_folders') || '[]');
-          } catch(err) { expandedFolders = []; }
 
-          if (childContainer) {
-            const isHidden = childContainer.classList.contains('hidden');
-            if (isHidden) {
-              childContainer.classList.remove('hidden');
-              toggleIcon.classList.remove('fa-chevron-right');
-              toggleIcon.classList.add('fa-chevron-down');
-              if (!expandedFolders.includes(folderId)) {
-                expandedFolders.push(folderId);
-              }
-            } else {
-              childContainer.classList.add('hidden');
-              toggleIcon.classList.remove('fa-chevron-down');
-              toggleIcon.classList.add('fa-chevron-right');
-              expandedFolders = expandedFolders.filter(id => id !== folderId);
-            }
-            this.setCookie('fm_expanded_folders', JSON.stringify(expandedFolders));
-          }
-          return;
-        }
-
-        if (link) {
-          e.preventDefault();
-          this.currentFolderId = link.dataset.id || null;
-          this.page = 1;
-          this.searchTerm = '';
-          if (this.searchField) this.searchField.value = '';
-          this.activeTab = 'files'; // Switch to files view when direct folder is selected
-          
-          document.querySelectorAll('.fm-nav-item').forEach(b => {
-            b.classList.remove('bg-emerald-50', 'text-emerald-800', 'font-semibold');
-            b.classList.add('text-gray-600', 'hover:bg-slate-50', 'hover:text-gray-800');
-          });
-          const filesNavBtn = document.querySelector('.fm-nav-item[data-tab="files"]');
-          if (filesNavBtn) {
-            filesNavBtn.classList.add('bg-emerald-50', 'text-emerald-800', 'font-semibold');
-            filesNavBtn.classList.remove('text-gray-600', 'hover:bg-slate-50', 'hover:text-gray-800');
-          }
-
-          this.updateURLParams();
-          this.fetchData();
-
-          const sidebarEl = document.getElementById('sidebar-left');
-          const backdropEl = document.getElementById('sidebar-backdrop');
-          if (sidebarEl && window.innerWidth < 1024) {
-            sidebarEl.classList.remove('translate-x-0', 'shadow-2xl');
-            sidebarEl.classList.add('-translate-x-full');
-            if (backdropEl) backdropEl.classList.add('hidden');
-          }
-        }
-      });
-    }
 
     // Master checkbox handler
     this.container.addEventListener('change', (e) => {
@@ -1804,18 +1776,42 @@ class FileManager {
         const encodedUuid = copyLinkBtn.dataset.encodedUuid;
         const filename = copyLinkBtn.dataset.filename || '';
         const folderId = copyLinkBtn.dataset.folderId !== undefined ? copyLinkBtn.dataset.folderId : (this.currentFolderId || '');
-        const shareUrl = `${window.location.origin}${window.location.pathname}?folder=${folderId}&preview_file=${encodedUuid}&preview_name=${encodeURIComponent(filename)}`;
+        
+        const ext = filename.split('.').pop().toLowerCase();
+        const isPreviewable = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'webm', 'mp3', 'wav', 'ogg'].includes(ext);
+        
+        let shareUrl = '';
+        let toastMsg = '';
+        if (isPreviewable) {
+          shareUrl = `${window.location.origin}${window.location.pathname}?folder=${folderId}&preview_file=${encodedUuid}&preview_name=${encodeURIComponent(filename)}`;
+          toastMsg = 'คัดลอกลิงก์แชร์ตัวอย่างไฟล์เรียบร้อยแล้ว!';
+        } else {
+          shareUrl = `${window.location.origin}/moph-db/file/download/${encodedUuid}`;
+          toastMsg = 'คัดลอกลิงก์ดาวน์โหลดไฟล์เรียบร้อยแล้ว!';
+        }
+
         this.copyToClipboard(shareUrl).then((success) => {
           if (success) {
-            Toastify({
-              text: 'คัดลอกลิงก์แชร์ตัวอย่างไฟล์เรียบร้อยแล้ว!',
-              duration: 3000,
-              gravity: 'bottom',
-              position: 'center',
-              style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-            }).showToast();
+            showToast(toastMsg, 'success');
           } else {
             alert('ไม่สามารถคัดลอกได้อัตโนมัติ กรุณาคัดลอกด้วยตนเอง: ' + shareUrl);
+          }
+        });
+        return;
+      }
+
+      // 3b. Row Actions dropdown: Copy Folder Link
+      const copyFolderLinkBtn = e.target.closest('.fm-action-copy-folder-link');
+      if (copyFolderLinkBtn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const folderId = copyFolderLinkBtn.dataset.id;
+        const downloadUrl = `${window.location.origin}/admin/upload/batch-download?folder_ids[]=${folderId}`;
+        this.copyToClipboard(downloadUrl).then((success) => {
+          if (success) {
+            showToast('คัดลอกลิงก์ดาวน์โหลดโฟลเดอร์เรียบร้อยแล้ว!', 'success');
+          } else {
+            alert('ไม่สามารถคัดลอกได้อัตโนมัติ กรุณาคัดลอกด้วยตนเอง: ' + downloadUrl);
           }
         });
         return;
@@ -1830,13 +1826,7 @@ class FileManager {
         if (hash) {
           this.copyToClipboard(hash).then((success) => {
             if (success) {
-              Toastify({
-                text: 'คัดลอกค่า Hash (SHA-256) แล้ว!',
-                duration: 3000,
-                gravity: 'bottom',
-                position: 'center',
-                style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-              }).showToast();
+              showToast('คัดลอกค่า Hash (SHA-256) แล้ว!', 'success');
             } else {
               alert('ไม่สามารถคัดลอกค่า Hash ได้อัตโนมัติ');
             }
@@ -1855,13 +1845,7 @@ class FileManager {
         const hash = copyHashBtnQuick.dataset.hash;
         this.copyToClipboard(hash).then((success) => {
           if (success) {
-            Toastify({
-              text: 'คัดลอกค่า Hash แล้ว!',
-              duration: 2000,
-              gravity: 'bottom',
-              position: 'center',
-              style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-            }).showToast();
+            showToast('คัดลอกค่า Hash แล้ว!', 'success');
           } else {
             alert('ไม่สามารถคัดลอกค่า Hash ได้อัตโนมัติ');
           }
@@ -1992,16 +1976,23 @@ class FileManager {
           const encodedUuid = copyLinkBtn.dataset.encodedUuid;
           const filename = copyLinkBtn.dataset.filename || '';
           const folderId = copyLinkBtn.dataset.folderId !== undefined ? copyLinkBtn.dataset.folderId : (this.currentFolderId || '');
-          const shareUrl = `${window.location.origin}${window.location.pathname}?folder=${folderId}&preview_file=${encodedUuid}&preview_name=${encodeURIComponent(filename)}`;
+          
+          const ext = filename.split('.').pop().toLowerCase();
+          const isPreviewable = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'mp4', 'webm', 'mp3', 'wav', 'ogg'].includes(ext);
+          
+          let shareUrl = '';
+          let toastMsg = '';
+          if (isPreviewable) {
+            shareUrl = `${window.location.origin}${window.location.pathname}?folder=${folderId}&preview_file=${encodedUuid}&preview_name=${encodeURIComponent(filename)}`;
+            toastMsg = 'คัดลอกลิงก์แชร์ตัวอย่างไฟล์เรียบร้อยแล้ว!';
+          } else {
+            shareUrl = `${window.location.origin}/moph-db/file/download/${encodedUuid}`;
+            toastMsg = 'คัดลอกลิงก์ดาวน์โหลดไฟล์เรียบร้อยแล้ว!';
+          }
+
           this.copyToClipboard(shareUrl).then((success) => {
             if (success) {
-              Toastify({
-                text: 'คัดลอกลิงก์แชร์ตัวอย่างไฟล์เรียบร้อยแล้ว!',
-                duration: 3000,
-                gravity: 'bottom',
-                position: 'center',
-                style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-              }).showToast();
+              showToast(toastMsg, 'success');
             } else {
               alert('ไม่สามารถคัดลอกได้อัตโนมัติ');
             }
@@ -2019,13 +2010,7 @@ class FileManager {
           if (hash) {
             this.copyToClipboard(hash).then((success) => {
               if (success) {
-                Toastify({
-                  text: 'คัดลอกค่า Hash (SHA-256) แล้ว!',
-                  duration: 3000,
-                  gravity: 'bottom',
-                  position: 'center',
-                  style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-                }).showToast();
+                showToast('คัดลอกค่า Hash (SHA-256) แล้ว!', 'success');
               } else {
                 alert('ไม่สามารถคัดลอกได้อัตโนมัติ');
               }
@@ -2193,13 +2178,32 @@ class FileManager {
         const sidebarNav = e.target.closest('.fm-sidebar-folder');
         if (sidebarNav) {
           e.preventDefault();
-          this.currentFolderId = sidebarNav.dataset.id;
+          this.currentFolderId = sidebarNav.dataset.id || null;
           this.page = 1;
           this.searchTerm = '';
           if (this.searchField) this.searchField.value = '';
           this.activeTab = 'files';
+
+          document.querySelectorAll('.fm-nav-item').forEach(b => {
+            b.classList.remove('bg-emerald-50', 'text-emerald-800', 'font-semibold');
+            b.classList.add('text-gray-600', 'hover:bg-slate-50', 'hover:text-gray-800');
+          });
+          const filesNavBtn = document.querySelector('.fm-nav-item[data-tab="files"]');
+          if (filesNavBtn) {
+            filesNavBtn.classList.add('bg-emerald-50', 'text-emerald-800', 'font-semibold');
+            filesNavBtn.classList.remove('text-gray-600', 'hover:bg-slate-50', 'hover:text-gray-800');
+          }
+
           this.updateURLParams();
           this.fetchData();
+
+          const sidebarEl = document.getElementById('sidebar-left');
+          const backdropEl = document.getElementById('sidebar-backdrop');
+          if (sidebarEl && window.innerWidth < 1024) {
+            sidebarEl.classList.remove('translate-x-0', 'shadow-2xl');
+            sidebarEl.classList.add('-translate-x-full');
+            if (backdropEl) backdropEl.classList.add('hidden');
+          }
           return;
         }
 
@@ -2446,6 +2450,9 @@ class FileManager {
                   <button class="w-full flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-slate-50 transition fm-action-download-folder" data-id="${folder.id}">
                     <i class="fa-solid fa-file-zipper mr-2.5 text-slate-400 w-4 text-center"></i> ดาวน์โหลดโฟลเดอร์ (Zip)
                   </button>
+                  <button class="w-full flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-slate-50 transition fm-action-copy-folder-link" data-id="${folder.id}">
+                    <i class="fa-solid fa-share-nodes mr-2.5 text-slate-400 w-4 text-center"></i> คัดลอกลิงก์ดาวน์โหลด
+                  </button>
 
                   <div class="px-3 py-1 text-[10px] font-bold text-gray-400 uppercase tracking-wider select-none border-b border-gray-50 bg-gray-50/50 mt-1">แก้ไข</div>
                   <button class="w-full flex items-center px-4 py-2 text-xs text-gray-700 hover:bg-slate-50 transition fm-btn-rename-folder" data-id="${folder.id}" data-name="${this.escapeHtml(folder.name)}">
@@ -2579,6 +2586,7 @@ class FileManager {
 
     // Load expanded folders from cookie
     let expandedFolders = [];
+    const hasExpandedCookie = this.getCookie('fm_expanded_folders') !== null && this.getCookie('fm_expanded_folders') !== '';
     try {
       expandedFolders = JSON.parse(this.getCookie('fm_expanded_folders') || '[]');
     } catch(err) { expandedFolders = []; }
@@ -2597,7 +2605,9 @@ class FileManager {
       folders.forEach(folder => {
         const children = this.all_folders.filter(f => parseInt(f.parent_id) === parseInt(folder.id));
         const isActive = parseInt(this.currentFolderId) === parseInt(folder.id);
-        const isExpanded = expandedFolders.includes(String(folder.id));
+        const isExpanded = hasExpandedCookie 
+          ? expandedFolders.includes(String(folder.id)) 
+          : (depth <= 1);
         
         subHtml += `
           <div class="flex flex-col transition" data-id="${folder.id}">
@@ -2745,7 +2755,7 @@ class FileManager {
           <div class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-sm font-bold text-white shadow">
             <span id="fm-bar-count">0</span>
           </div>
-          <span class="text-sm font-semibold tracking-wide">รายการที่เลือกไว้</span>
+          <span class="text-sm tracking-wide">รายการที่เลือกไว้</span>
         </div>
         <div class="flex items-center space-x-2 flex-nowrap shrink-0">
           <button id="fm-bar-btn-download" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-black text-xs font-semibold rounded-lg transition border border-slate-200 cursor-pointer whitespace-nowrap">
@@ -2856,13 +2866,7 @@ class FileManager {
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
-        Toastify({
-          text: 'ย้ายตำแหน่งรายการเรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-        }).showToast();
+        showToast('ย้ายตำแหน่งรายการเรียบร้อยแล้ว!', 'success');
         this.clearSelection();
         this.fetchData();
       } else {
@@ -2895,13 +2899,7 @@ class FileManager {
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
-        Toastify({
-          text: 'ลบรายการที่เลือกเรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #f857a6, #ff5858)' }
-        }).showToast();
+        showToast('ลบรายการที่เลือกเรียบร้อยแล้ว!', 'success');
         this.clearSelection();
         this.fetchData();
       } else {
@@ -3145,13 +3143,7 @@ class FileManager {
       const data = await response.json();
 
       if (data.status === 'success') {
-        Toastify({
-          text: 'เปลี่ยนชื่อไฟล์เรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-        }).showToast();
+        showToast('เปลี่ยนชื่อไฟล์เรียบร้อยแล้ว!', 'success');
         this.fetchData();
       } else {
         throw new Error(data.message || 'Error renaming file');
@@ -3175,13 +3167,7 @@ class FileManager {
       const data = await response.json();
 
       if (data.status === 'success') {
-        Toastify({
-          text: 'ลบโฟลเดอร์และข้อมูลลูกทั้งหมดเรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #f857a6, #ff5858)' }
-        }).showToast();
+        showToast('ลบโฟลเดอร์และข้อมูลลูกทั้งหมดเรียบร้อยแล้ว!', 'success');
         this.fetchData();
       } else {
         throw new Error(data.message || 'Error deleting folder');
@@ -3233,13 +3219,7 @@ class FileManager {
       const data = await response.json();
 
       if (data.status === 'success') {
-        Toastify({
-          text: 'สร้างโฟลเดอร์เรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-        }).showToast();
+        showToast('สร้างโฟลเดอร์เรียบร้อยแล้ว!', 'success');
         this.fetchData();
       } else {
         throw new Error(data.message || 'Error creating folder');
@@ -3263,13 +3243,7 @@ class FileManager {
       const data = await response.json();
 
       if (data.status === 'success') {
-        Toastify({
-          text: 'ลบไฟล์เรียบร้อยแล้ว!',
-          duration: 3000,
-          gravity: 'bottom',
-          position: 'center',
-          style: { background: 'linear-gradient(to right, #f857a6, #ff5858)' }
-        }).showToast();
+        showToast('ลบไฟล์เรียบร้อยแล้ว!', 'success');
         this.fetchData();
       } else {
         throw new Error(data.message || 'Error deleting file');
@@ -3486,7 +3460,7 @@ class FileManager {
     }
 
     this.dashboardContainer.innerHTML = `
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 select-none">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 select-none">
         <!-- Card 1: Total Files -->
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition">
           <div class="space-y-1">
@@ -3506,26 +3480,7 @@ class FileManager {
           </div>
         </div>
 
-        <!-- Card 2: Total Folders -->
-        <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition">
-          <div class="space-y-1">
-            <div class="flex items-center text-xs font-bold text-slate-400 uppercase">
-              <span>จำนวนโฟลเดอร์</span>
-              <div class="relative ml-1 group/tooltip">
-                <i class="fa-regular fa-circle-question cursor-pointer text-gray-400 hover:text-gray-600"></i>
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50">
-                  จำนวนไดเรกทอรี/ประเภทคลังที่สร้างขึ้นเพื่อจัดแบ่งกลุ่มข้อมูล
-                </div>
-              </div>
-            </div>
-            <p class="text-2xl font-bold text-gray-800">${stats.total_folders || 0}</p>
-          </div>
-          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-lg group-hover:scale-105 transition">
-            <i class="fa-solid fa-folder-open"></i>
-          </div>
-        </div>
-
-        <!-- Card 3: Storage Size -->
+        <!-- Card 2: Storage Size -->
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition">
           <div class="space-y-1">
             <div class="flex items-center text-xs font-bold text-slate-400 uppercase">
@@ -3544,42 +3499,8 @@ class FileManager {
           </div>
         </div>
 
-        <!-- Card 4: DB vs Physical Ratio -->
-        <div class="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition">
-          <div class="space-y-1.5 flex-grow mr-2">
-            <div class="flex items-center text-[10px] font-bold text-slate-400 uppercase">
-              <span>สัดส่วนแหล่งเก็บข้อมูล</span>
-              <div class="relative ml-1 group/tooltip">
-                <i class="fa-regular fa-circle-question cursor-pointer text-gray-400 hover:text-gray-600"></i>
-                <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-slate-800 text-white text-[10px] p-2 rounded shadow-xl opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity z-50">
-                  สัดส่วนระหว่างการบันทึกข้อมูลก้อนไฟล์ลง MySQL (DB) และบันทึกเป็นไฟล์จริงบนดิสก์ (Physical)
-                </div>
-              </div>
-            </div>
-            <div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex flex-row">
-              <div class="bg-fuchsia-500 h-full" style="width: ${dbPct}%" title="DB Storage: ${dbPct}%"></div>
-              <div class="bg-sky-500 h-full" style="width: ${physPct}%" title="Physical: ${physPct}%"></div>
-            </div>
-            <div class="flex justify-between text-[10px] font-semibold">
-              <span class="text-fuchsia-600">DB: ${dbPct}%</span>
-              <span class="text-sky-650">Physical: ${physPct}%</span>
-            </div>
-          </div>
-          <div class="w-11 h-11 bg-fuchsia-50 text-fuchsia-600 rounded-xl flex items-center justify-center shrink-0">
-            <i class="fa-solid fa-code-compare"></i>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-        <!-- Storage ratio bar details -->
+        <!-- Card 3: Storage ratio bar details -->
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-50 pb-2.5">
-            <h3 class="text-xs font-bold text-gray-800 flex items-center">
-              <i class="fa-solid fa-box-archive text-emerald-500 mr-2"></i> สถิติการจัดกลุ่มสื่อ (Storage Details)
-            </h3>
-          </div>
-          
           <div class="space-y-4 select-none">
             <!-- Database info -->
             <div class="space-y-1">
@@ -3604,12 +3525,14 @@ class FileManager {
             </div>
           </div>
         </div>
+      </div>
 
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
         <!-- Top downloads -->
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-slate-50 pb-2">
             <h3 class="text-xs font-bold text-gray-800 flex items-center">
-              <i class="fa-solid fa-fire text-amber-500 mr-2"></i> เอกสารยอดนิยม (Top Downloads)
+              <i class="fa-solid fa-fire text-amber-500 mr-2"></i> ไฟล์ยอดนิยม
             </h3>
           </div>
           <div class="space-y-2.5">
@@ -3621,7 +3544,7 @@ class FileManager {
         <div class="bg-white p-5 rounded-xl border border-slate-100 shadow-sm space-y-3">
           <div class="flex items-center justify-between border-b border-slate-50 pb-2">
             <h3 class="text-xs font-bold text-gray-800 flex items-center">
-              <i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i> บันทึกความปลอดภัยระบบ (Audit Logs)
+              <i class="fa-solid fa-shield-halved text-emerald-600 mr-2"></i> บันทึกความปลอดภัยระบบ
             </h3>
           </div>
           <div class="divide-y divide-slate-50 overflow-y-auto max-h-[220px] pr-1 custom-scrollbar">
@@ -3638,7 +3561,7 @@ class FileManager {
         <div class="border-b border-slate-100 pb-3">
           <h2 class="text-base font-bold text-gray-800 flex items-center">
             <i class="fa-solid fa-sliders text-emerald-600 mr-2.5"></i>
-            ตั้งค่าระบบคลังไฟล์ (System Settings)
+            ตั้งค่าระบบคลังไฟล์
           </h2>
           <p class="text-xs text-gray-400 mt-0.5">จัดการค่าพารามิเตอร์หลักของระบบคลังไฟล์และการจัดเก็บชิ้นส่วนข้อมูล</p>
         </div>
@@ -3647,13 +3570,13 @@ class FileManager {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- System Name -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">ชื่อระบบภาษาไทย (System Name)</label>
+              <label class="block text-xs font-bold text-gray-600">ชื่อระบบภาษาไทย</label>
               <input type="text" name="system_name" value="${this.escapeHtml(this.settings.system_name || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
 
             <!-- Agency Short Name -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">ชื่อย่อหน่วยงาน (Agency Short Name)</label>
+              <label class="block text-xs font-bold text-gray-600">ชื่อย่อหน่วยงาน</label>
               <input type="text" name="agency_short_name" value="${this.escapeHtml(this.settings.agency_short_name || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
           </div>
@@ -3661,7 +3584,7 @@ class FileManager {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Date Format -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">รูปแบบวันเวลาที่แสดงผล (Date Format)</label>
+              <label class="block text-xs font-bold text-gray-600">รูปแบบวันเวลาที่แสดงผล</label>
               <select name="date_format" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                 <option value="be" ${this.settings.date_format === 'be' ? 'selected' : ''}>พุทธศักราช (ปี พ.ศ. + 543)</option>
                 <option value="ce" ${this.settings.date_format === 'ce' ? 'selected' : ''}>คริสต์ศักราช (ปี ค.ศ.)</option>
@@ -3670,7 +3593,7 @@ class FileManager {
 
             <!-- Default Storage Type -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">ค่าเริ่มต้นแหล่งจัดเก็บ (Default Storage Type)</label>
+              <label class="block text-xs font-bold text-gray-600">ค่าเริ่มต้นแหล่งจัดเก็บ</label>
               <select name="default_storage_type" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
                 <option value="database" ${this.settings.default_storage_type === 'database' ? 'selected' : ''}>จัดเก็บในฐานข้อมูล (DB Storage)</option>
                 <option value="physical" ${this.settings.default_storage_type === 'physical' ? 'selected' : ''}>จัดเก็บบนดิสก์เซิร์ฟเวอร์ (Physical Storage)</option>
@@ -3681,20 +3604,20 @@ class FileManager {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- Max Upload File Size -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">ขนาดไฟล์สูงสุดต่อชิ้นส่วน (Max Upload Size - MB)</label>
+              <label class="block text-xs font-bold text-gray-600">ขนาดไฟล์สูงสุดต่อชิ้นส่วน (MB)</label>
               <input type="number" name="max_file_size" value="${parseInt(this.settings.max_file_size || 10)}" min="1" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
 
             <!-- Max Multiple Upload Limit -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">จำนวนอัปโหลดไฟล์พร้อมกันสูงสุด (Max Multiple Uploads)</label>
+              <label class="block text-xs font-bold text-gray-600">จำนวนอัปโหลดไฟล์พร้อมกันสูงสุด</label>
               <input type="number" name="max_multiple_upload" value="${parseInt(this.settings.max_multiple_upload || 10)}" min="1" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
           </div>
 
           <!-- Allowed Extensions -->
           <div class="space-y-1">
-            <label class="block text-xs font-bold text-gray-600">นามสกุลไฟล์ที่ได้รับอนุญาต (Allowed Extensions - คั่นด้วยเครื่องหมายจุลภาค)</label>
+            <label class="block text-xs font-bold text-gray-600">นามสกุลไฟล์ที่ได้รับอนุญาต (คั่นด้วยเครื่องหมายจุลภาค)</label>
             <input type="text" name="allowed_extensions" value="${this.escapeHtml(this.settings.allowed_extensions || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="pdf, docx, xlsx, png, mp4">
             <span class="text-[10px] text-gray-400 mt-1 block">ตัวอย่างนามสกุลสื่อมีเดียที่ระบบแนะนำ: pdf, doc, docx, xls, xlsx, png, jpg, jpeg, gif, webp, mp4, webm, mp3, wav, ogg</span>
           </div>
@@ -3725,13 +3648,7 @@ class FileManager {
           const data = await response.json();
 
           if (data.status === 'success') {
-            Toastify({
-              text: 'บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!',
-              duration: 3000,
-              gravity: 'bottom',
-              position: 'center',
-              style: { background: 'linear-gradient(to right, #00b09b, #96c93d)' }
-            }).showToast();
+            showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!', 'success');
 
             this.fetchData();
           } else {

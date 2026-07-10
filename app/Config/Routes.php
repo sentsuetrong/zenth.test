@@ -13,7 +13,7 @@ $routes->group('admin', static function (RouteCollection $routes) {
   $routes->get('upload/list-json', 'FileController::listJson');
   $routes->post('upload/create-folder', 'FileController::createFolder');
   $routes->post('upload/delete-file', 'FileController::deleteFile');
-  $routes->post('upload/batch-download', 'FileController::batchDownload');
+  $routes->match(['get', 'post'], 'upload/batch-download', 'FileController::batchDownload');
   $routes->post('upload/batch-move', 'FileController::batchMove');
   $routes->post('upload/batch-delete', 'FileController::batchDelete');
   $routes->post('upload/rename-folder', 'FileController::renameFolder');

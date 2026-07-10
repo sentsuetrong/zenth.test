@@ -383,4 +383,153 @@ class FileManagementTest extends CIUnitTestCase
         $fileModel->delete($uuidPhys, true);
         $fileModel->delete($uuidDb, true);
     }
+
+    public function testChunkUploadWordExcelAllowedExtensions(): void
+    {
+        $this->mockAuth();
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'tst');
+        file_put_contents($tempPath, 'fake docx content');
+
+        $_FILES['file'] = [
+            'name'     => 'blob',
+            'type'     => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'tmp_name' => $tempPath,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => filesize($tempPath),
+        ];
+
+        $dzuuid = $this->generateUuid();
+        
+        $result = $this->post('admin/upload/chunk', [
+            'dzfilename' => 'agenda.docx',
+            'dzuuid' => $dzuuid,
+            'dzchunkindex' => 0,
+            'dztotalchunkcount' => 1,
+            'dztotalfilesize' => filesize($tempPath),
+            'storage_type' => 'physical'
+        ]);
+
+        $result->assertStatus(200);
+        $respData = json_decode($result->getJSON(), true);
+        $this->assertSame('completed', $respData['status']);
+        $fileUuid = $respData['file_uuid'];
+        $this->assertNotEmpty($fileUuid);
+
+        // Verify it was saved with the correct filename and extension in DB
+        $fileModel = new FileModel();
+        $fileRecord = $fileModel->find($fileUuid);
+        $this->assertNotNull($fileRecord);
+        $this->assertSame('agenda.docx', $fileRecord['filename']);
+        $this->assertSame('physical', $fileRecord['storage_type']);
+
+        // Clean up
+        $filePath = WRITEPATH . 'uploads/' . $fileUuid;
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+        $fileModel->delete($fileUuid, true);
+    }
+
+    public function testChunkUploadInvalidExtensionRejection(): void
+    {
+        $this->mockAuth();
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'tst');
+        file_put_contents($tempPath, 'fake exe content');
+
+        $_FILES['file'] = [
+            'name'     => 'blob',
+            'type'     => 'application/octet-stream',
+            'tmp_name' => $tempPath,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => filesize($tempPath),
+        ];
+
+        $dzuuid = $this->generateUuid();
+        
+        $result = $this->post('admin/upload/chunk', [
+            'dzfilename' => 'malicious.exe',
+            'dzuuid' => $dzuuid,
+            'dzchunkindex' => 0,
+            'dztotalchunkcount' => 1,
+            'dztotalfilesize' => filesize($tempPath),
+            'storage_type' => 'physical'
+        ]);
+
+        $result->assertStatus(400); // Fail
+        $respData = json_decode($result->getJSON(), true);
+        $errorMsg = $respData['messages']['error'] ?? $respData['error'] ?? '';
+        $this->assertStringContainsString('ไม่ได้รับอนุญาตให้อัปโหลด', $errorMsg);
+
+        if (file_exists($tempPath)) {
+            unlink($tempPath);
+        }
+    }
+
+    public function testChunkUploadFolderAndSubfolders(): void
+    {
+        $this->mockAuth();
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'tst');
+        file_put_contents($tempPath, 'fake folder pdf content');
+
+        $_FILES['file'] = [
+            'name'     => 'blob',
+            'type'     => 'application/pdf',
+            'tmp_name' => $tempPath,
+            'error'    => UPLOAD_ERR_OK,
+            'size'     => filesize($tempPath),
+        ];
+
+        $dzuuid = $this->generateUuid();
+        
+        $result = $this->post('admin/upload/chunk', [
+            'dzfilename' => 'manual.pdf',
+            'dzuuid' => $dzuuid,
+            'dzchunkindex' => 0,
+            'dztotalchunkcount' => 1,
+            'dztotalfilesize' => filesize($tempPath),
+            'storage_type' => 'physical',
+            'relative_path' => 'Project/Docs/manual.pdf'
+        ]);
+
+        $result->assertStatus(200);
+        $respData = json_decode($result->getJSON(), true);
+        $this->assertSame('completed', $respData['status']);
+        $fileUuid = $respData['file_uuid'];
+        $this->assertNotEmpty($fileUuid);
+
+        // Verify folder structure in DB
+        $fileModel = new FileModel();
+        $containerModel = new FileContainerModel();
+
+        $fileRecord = $fileModel->find($fileUuid);
+        $this->assertNotNull($fileRecord);
+        $this->assertSame('manual.pdf', $fileRecord['filename']);
+        
+        $docsFolderId = $fileRecord['container_id'];
+        $this->assertNotNull($docsFolderId);
+        
+        $docsFolder = $containerModel->find($docsFolderId);
+        $this->assertNotNull($docsFolder);
+        $this->assertSame('Docs', $docsFolder['name']);
+        
+        $projectFolderId = $docsFolder['parent_id'];
+        $this->assertNotNull($projectFolderId);
+        
+        $projectFolder = $containerModel->find($projectFolderId);
+        $this->assertNotNull($projectFolder);
+        $this->assertSame('Project', $projectFolder['name']);
+        $this->assertNull($projectFolder['parent_id']);
+
+        // Clean up
+        $filePath = WRITEPATH . 'uploads/' . $fileUuid;
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+        $fileModel->delete($fileUuid, true);
+        $containerModel->delete($docsFolderId, true);
+        $containerModel->delete($projectFolderId, true);
+    }
 }

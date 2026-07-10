@@ -91,13 +91,23 @@
           </div>
         </div>
         
-        <!-- Storage Option Toggle integrated here -->
-        <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 select-none">
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input type="checkbox" id="fm-storage-toggle" class="sr-only peer" checked>
-            <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-            <span class="ml-2 text-xs font-semibold text-gray-700" id="fm-storage-label">จัดเก็บลงฐานข้อมูล (DB Storage)</span>
-          </label>
+        <!-- Actions Button Container -->
+        <div class="flex items-center space-x-3">
+          <!-- Folder Upload Button Trigger -->
+          <button id="fm-folder-upload-btn" class="flex items-center space-x-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold border border-emerald-200 transition cursor-pointer" title="เลือกทั้งโฟลเดอร์เพื่ออัปโหลด">
+            <i class="fa-solid fa-folder-plus text-xs"></i>
+            <span>อัปโหลดโฟลเดอร์</span>
+          </button>
+          <input type="file" id="fm-folder-upload-input" webkitdirectory directory multiple class="hidden">
+
+          <!-- Storage Option Toggle integrated here -->
+          <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 select-none">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="fm-storage-toggle" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              <span class="ml-2 text-xs font-semibold text-gray-700" id="fm-storage-label">จัดเก็บลงฐานข้อมูล (DB Storage)</span>
+            </label>
+          </div>
         </div>
       </div>
 
@@ -234,7 +244,7 @@
       url: "<?= base_url('admin/upload/chunk') ?>",
       method: "post",
       paramName: "file",
-      acceptedFiles: ".pdf",
+      acceptedFiles: "<?= esc($allowed_extensions_list ?? '.pdf') ?>",
       maxFilesize: 20480, // Limit Frontend (เช่น 20GB)
       chunking: true,
       forceChunking: true,
@@ -258,6 +268,12 @@
           // Append storage type from selection
           const storageTypeVal = storageToggle.checked ? 'database' : 'physical';
           formData.append("storage_type", storageTypeVal);
+
+          // Append relative path if file is part of a folder upload
+          const relativePath = file.fullPath || file.webkitRelativePath || '';
+          if (relativePath) {
+            formData.append("relative_path", relativePath);
+          }
         });
 
         this.on("uploadprogress", function(file, progress, bytesSent) {
@@ -285,16 +301,7 @@
               }
             }
 
-            Toastify({
-              text: `อัปโหลดไฟล์ "${file.name}" เรียบร้อยแล้ว!`,
-              duration: 3000,
-              close: true,
-              gravity: 'bottom',
-              position: 'center',
-              style: {
-                background: 'linear-gradient(to right, #00b09b, #96c93d)',
-              }
-            }).showToast();
+            showToast(`อัปโหลดไฟล์ "${file.name}" เรียบร้อยแล้ว!`, 'success');
             
             // Refresh FileManager list
             fm.refresh();
@@ -316,22 +323,34 @@
               statusText.textContent = 'ล้มเหลว';
             }
           }
-          Toastify({
-            text: `ไม่สามารถอัปโหลดไฟล์ "${file.name}" ได้!`,
-            duration: 4000,
-            close: true,
-            gravity: 'bottom',
-            position: 'center',
-            style: {
-              background: 'linear-gradient(to right, #ad46ff, #f6339a)',
-            }
-          }).showToast();
+          showToast(`ไม่สามารถอัปโหลดไฟล์ "${file.name}" ได้!`, 'danger');
         });
       }
     });
 
     // 3. Register Dropzone in FileManager
     fm.registerDropzone(myDropzone);
+
+    // 4. Folder Upload Trigger Click
+    const folderUploadBtn = document.getElementById('fm-folder-upload-btn');
+    const folderUploadInput = document.getElementById('fm-folder-upload-input');
+    if (folderUploadBtn && folderUploadInput) {
+      folderUploadBtn.addEventListener('click', function() {
+        folderUploadInput.click();
+      });
+      
+      folderUploadInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          // Preserve webkitRelativePath in dropzone file object
+          file.fullPath = file.webkitRelativePath;
+          myDropzone.addFile(file);
+        }
+        // Clear input value so selecting the same folder again fires change event
+        folderUploadInput.value = '';
+      });
+    }
   });
 </script>
 
