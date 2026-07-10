@@ -18,8 +18,11 @@
   - **CSS:** Tailwind CSS v4 (คอมไพล์ผ่าน PostCSS จาก `./assets/css/app.css` ไปยัง `./assets/css/compiled-main.css`)
   - **Icons:** Font Awesome v6.7.2 (โหลดผ่าน CDN ใน header)
   - **Thai Fonts:** ฟอนต์ภาษาไทย ChulabhornLikit และ Sarabun (เก็บใน `./assets/fonts/`)
-  - **JS:** Vanilla JS + Toastify.js (สำหรับแสดง Alert/Notification)
-  - **SmartSelect:** คอมโพเนนต์ JS ใน `./assets/js/main.js` ทำหน้าที่จัดการกล่องเลือกข้อมูลแบบ Multi-select ที่รองรับ Lazy Rendering (แบ่งโหลดรอบละ 50 รายการ) และระบบค้นหาล่วงหน้า (Pre-computation) เพื่อไม่ให้หน้าเว็บค้าง
+  - **JS:** Vanilla JS + Toastify.js (สำหรับแสดง Alert/Notification) แยกไฟล์เป็น 3 โมดูลหลัก ได้แก่ `main.js` (ควบคุม UI หน้ากากทั่วไป), `smart-select.js` (คอมโพเนนต์กล่องเลือก), และ `file-manager.js` (ระบบหลังบ้านแอดมิน)
+  - **SmartSelect:** คอมโพเนนต์ JS ใน `./assets/js/smart-select.js` ทำหน้าที่จัดการกล่องเลือกข้อมูลแบบ Multi-select ที่รองรับ Lazy Rendering (แบ่งโหลดรอบละ 50 รายการ), ระบบค้นหาล่วงหน้า (Pre-computation) และระบบหน่วงเวลาการพิมพ์ค้นหา (Debouncing) เพื่อความรวดเร็วและไม่กิน CPU
+- **JS Build Scripts:**
+  - `npm run build`: มินิฟายและบันเดิลไฟล์ JS ทั้งหมด (และ CSS) จากโฟลเดอร์ `assets/js/src/` ไปยัง `assets/js/` ผ่าน `esbuild` เพื่อความเร็วในการโหลดสูงสุด
+  - `npm run dev:js`: เฝ้าดูและคอมไพล์ JS ย่อยทันทีที่แก้ไข
 - **CSS Build Scripts:**
   - `npm run dev`: เฝ้าดูการเปลี่ยนแปลงของ CSS และคอมไพล์ใหม่ทันที (`postcss ./assets/css/app.css -o ./assets/css/compiled-main.css --watch`)
   - `npm run build`: คอมไพล์ CSS สำหรับใช้ใน Production (พร้อมมินิฟายไฟล์)
@@ -61,6 +64,12 @@ zenth.test/
 │       │   └── moph-db/            # Layout หลักของระบบส่วนหัว/ท้าย (header.php, footer.php, main.php)
 │       └── moph-db/                # แม่แบบฝั่งหน้าสืบค้นข้อมูลสาธารณะ (Laws, MOU)
 ├── assets/                  # ที่เก็บไฟล์ CSS/JS และทรัพยากรรูปภาพ/ฟอนต์ของระบบ
+│   ├── css/
+│   └── js/
+│       ├── src/             # ซอร์สสคริปต์ก่อน compile (main.js, smart-select.js, file-manager.js)
+│       ├── main.js          # ไฟล์หลักสำหรับหน้าสาธารณะ (ขนาดบีบอัด ~15KB)
+│       ├── smart-select.js  # คอมโพเนนต์ SmartSelect (Multi-select) พร้อม Debouncing (~16KB)
+│       └── file-manager.js  # สคริปต์ของแอดมินสำหรับอัปโหลด/ย้ายไฟล์ (~97KB)
 └── docs/                    # รายละเอียดเอกสารสถาปัตยกรรมเพิ่มเติมของระบบ
     └── future_rbac_plan.md  # แผนการพัฒนาสิทธิ์การเข้าถึงข้อมูลตามผังองค์กรและการจัดการบัญชีผู้ใช้ในอนาคต
 ```
@@ -160,6 +169,7 @@ zenth.test/
   - ออกแบบพิเศษเพื่อแก้ไขปัญหากล่อง Select ค้างเมื่อมีตัวเลือกปริมาณมาก (เช่น รายชื่อหน่วยงานภาคีทั่วประเทศ)
   - ประมวลผลเก็บคีย์เวิร์ดค้นหาและจัดรูปแบบล่วงหน้า (Pre-computation) ตอนรับค่ามาครั้งแรก
   - แสดงผลแบบขี้เกียจ (Lazy Rendering) โดยจะวาดตัวเลือกบนหน้าเว็บเพียงรอบละ 50 รายการ และจะโหลดชุดถัดไปเมื่อผู้ใช้งานเลื่อนหน้าจอลงมาด้านล่างสุดของกล่องตัวเลือก
+  - **ระบบหน่วงเวลาการพิมพ์ (Debouncing):** เพิ่ม Debounce 200ms ในการรับข้อความพิมพ์ในช่องค้นหา เพื่อป้องกันการค้นหาและ Re-render ทุกตัวอักษรอย่างรวดเร็วเกินไป ช่วยลดการใช้ทรัพยากรบนคอมพิวเตอร์ผู้ใช้ได้เป็นอย่างดี
 - **Tailwind CSS Dynamic Class Compilation Constraint (ข้อจำกัดชื่อคลาสไดนามิก):**
   - **ห้าม "Chopping Up" คลาสเด็ดขาด:** เพื่อให้ตัวสแกนหาคลาส (Static Analysis Engine) ของ Tailwind CSS สามารถตรวจพบและดึงคลาสไปคอมไพล์ลงไฟล์ CSS ปลายทาง (`compiled-main.css`) ได้ครบถ้วน
   - **การเขียนโค้ดที่ถูกต้อง:** ต้องระบุชื่อคลาสแบบเต็มคำเสมอ ห้ามแยกเขียนเพื่อต่อสตริงในลอจิก PHP หรือ Javascript เช่น:
@@ -176,8 +186,9 @@ zenth.test/
 - **Run Database Migrations:** `php spark migrate`
 - **Rollback Migrations:** `php spark migrate:rollback`
 - **Seed Simulated Data (100 MOUs):** `php spark db:seed MouSeeder`
-- **Compiles Tailwind CSS (Watch Mode):** `npm run dev`
-- **Compiles Tailwind CSS (Production):** `npm run build`
+- **Compiles CSS & JS (Production Build & Minify):** `npm run build`
+- **Compiles CSS (Watch Mode):** `npm run dev` (หรือ `npm run dev:css`)
+- **Compiles JS (Watch Mode):** `npm run dev:js`
 - **Run Unit Tests:** `composer test` หรือ `php vendor/bin/phpunit`
 
 ---

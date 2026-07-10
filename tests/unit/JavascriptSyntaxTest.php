@@ -11,16 +11,22 @@ class JavascriptSyntaxTest extends CIUnitTestCase
 {
     public function testJavascriptSyntaxIsValid()
     {
-        $jsFile = ROOTPATH . 'assets/js/main.js';
+        $jsFiles = [
+            ROOTPATH . 'assets/js/main.js',
+            ROOTPATH . 'assets/js/smart-select.js',
+            ROOTPATH . 'assets/js/file-manager.js',
+        ];
         
-        $this->assertFileExists($jsFile, "Javascript file main.js must exist");
+        foreach ($jsFiles as $jsFile) {
+            $this->assertFileExists($jsFile, "Javascript file " . basename($jsFile) . " must exist");
 
-        // Execute node --check to validate syntax
-        $output = [];
-        $returnCode = 0;
-        exec("node --check " . escapeshellarg($jsFile) . " 2>&1", $output, $returnCode);
+            // Execute node --check to validate syntax
+            $output = [];
+            $returnCode = 0;
+            exec("node --check " . escapeshellarg($jsFile) . " 2>&1", $output, $returnCode);
 
-        $outputStr = implode("\n", $output);
-        $this->assertSame(0, $returnCode, "Javascript syntax check failed:\n{$outputStr}");
+            $outputStr = implode("\n", $output);
+            $this->assertSame(0, $returnCode, "Javascript syntax check failed for " . basename($jsFile) . ":\n{$outputStr}");
+        }
     }
 }

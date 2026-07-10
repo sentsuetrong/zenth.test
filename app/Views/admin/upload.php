@@ -191,6 +191,7 @@
 <!-- Dropzone resources -->
 <link rel="stylesheet" href="https://unpkg.com/dropzone@5/dist/min/dropzone.min.css" />
 <script src="https://unpkg.com/dropzone@5/dist/min/dropzone.min.js"></script>
+<script src="<?= base_url('/assets/js/file-manager.js?v=' . time()) ?>"></script>
 
 <script>
   Dropzone.autoDiscover = false;
