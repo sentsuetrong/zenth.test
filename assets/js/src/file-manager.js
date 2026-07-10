@@ -2472,6 +2472,25 @@ class FileManager {
   }
 
   renderSettingsForm() {
+    const SYSTEM_DEFAULTS = {
+      settings_mode: 'system',
+      system_name: 'ระบบจัดการคลังไฟล์',
+      system_name_en: 'MOPH File System',
+      agency_short_name: 'กองกฎหมาย สป.สธ.',
+      date_format: 'be',
+      default_storage_type: 'database',
+      max_file_size: 10,
+      chunk_size: 512,
+      max_multiple_upload: 10,
+      allowed_extensions: 'pdf,doc,docx,xls,xlsx,png,jpg,jpeg,gif,webp,mp4,webm,mp3,wav,ogg'
+    };
+
+    if (!this.customSettings) {
+      this.customSettings = { ...this.settings };
+    }
+
+    const isSystemMode = this.settings.settings_mode === 'system';
+
     this.settingsContainer.innerHTML = `
       <div class="flex flex-col space-y-5">
         <div class="border-b border-slate-100 pb-3">
@@ -2483,15 +2502,32 @@ class FileManager {
         </div>
 
         <form id="fm-settings-form" class="space-y-4 max-w-2xl select-none">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Settings Mode Toggler -->
+          <div class="flex items-center bg-emerald-50/50 p-4 rounded-xl border border-emerald-100/50 select-none">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="fm-settings-mode-toggle" name="settings_mode" value="system" class="sr-only peer" ${isSystemMode ? 'checked' : ''}>
+              <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+              <span class="ml-3 text-xs font-bold text-gray-800" id="fm-settings-mode-label">
+                ${isSystemMode ? 'ใช้ค่าเริ่มต้นจากระบบ (System Defaults)' : 'ตั้งค่าใช้งานเอง (Custom Configuration)'}
+              </span>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- System Name -->
-            <div class="space-y-1">
+            <div class="space-y-1 col-span-1">
               <label class="block text-xs font-bold text-gray-600">ชื่อระบบภาษาไทย</label>
               <input type="text" name="system_name" value="${this.escapeHtml(this.settings.system_name || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
 
+            <!-- System Name (English) -->
+            <div class="space-y-1 col-span-1">
+              <label class="block text-xs font-bold text-gray-600">ชื่อระบบภาษาอังกฤษ</label>
+              <input type="text" name="system_name_en" value="${this.escapeHtml(this.settings.system_name_en || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+
             <!-- Agency Short Name -->
-            <div class="space-y-1">
+            <div class="space-y-1 col-span-1">
               <label class="block text-xs font-bold text-gray-600">ชื่อย่อหน่วยงาน</label>
               <input type="text" name="agency_short_name" value="${this.escapeHtml(this.settings.agency_short_name || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
@@ -2501,27 +2537,29 @@ class FileManager {
             <!-- Date Format -->
             <div class="space-y-1">
               <label class="block text-xs font-bold text-gray-600">รูปแบบวันเวลาที่แสดงผล</label>
-              <select name="date_format" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                <option value="be" ${this.settings.date_format === 'be' ? 'selected' : ''}>พุทธศักราช (ปี พ.ศ. + 543)</option>
-                <option value="ce" ${this.settings.date_format === 'ce' ? 'selected' : ''}>คริสต์ศักราช (ปี ค.ศ.)</option>
-              </select>
+              <div id="settings-date-format-select"></div>
+              <input type="hidden" name="date_format" id="settings-date-format-value" value="${this.settings.date_format || 'be'}">
             </div>
 
             <!-- Default Storage Type -->
             <div class="space-y-1">
               <label class="block text-xs font-bold text-gray-600">ค่าเริ่มต้นแหล่งจัดเก็บ</label>
-              <select name="default_storage_type" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
-                <option value="database" ${this.settings.default_storage_type === 'database' ? 'selected' : ''}>จัดเก็บในฐานข้อมูล (DB Storage)</option>
-                <option value="physical" ${this.settings.default_storage_type === 'physical' ? 'selected' : ''}>จัดเก็บบนดิสก์เซิร์ฟเวอร์ (Physical Storage)</option>
-              </select>
+              <div id="settings-storage-type-select"></div>
+              <input type="hidden" name="default_storage_type" id="settings-storage-type-value" value="${this.settings.default_storage_type || 'database'}">
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <!-- Max Upload File Size -->
             <div class="space-y-1">
-              <label class="block text-xs font-bold text-gray-600">ขนาดไฟล์สูงสุดต่อชิ้นส่วน (MB)</label>
+              <label class="block text-xs font-bold text-gray-600">ขนาดไฟล์สูงสุดต่อไฟล์ (MB)</label>
               <input type="number" name="max_file_size" value="${parseInt(this.settings.max_file_size || 10)}" min="1" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
+            </div>
+
+            <!-- Chunk Size -->
+            <div class="space-y-1">
+              <label class="block text-xs font-bold text-gray-600">ขนาดชิ้นส่วนแบ่งอัปโหลด (KB)</label>
+              <input type="number" name="chunk_size" value="${parseInt(this.settings.chunk_size || 512)}" min="64" max="10240" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none">
             </div>
 
             <!-- Max Multiple Upload Limit -->
@@ -2533,14 +2571,14 @@ class FileManager {
 
           <!-- Allowed Extensions -->
           <div class="space-y-1">
-            <label class="block text-xs font-bold text-gray-600">นามสกุลไฟล์ที่ได้รับอนุญาต (คั่นด้วยเครื่องหมายจุลภาค)</label>
-            <input type="text" name="allowed_extensions" value="${this.escapeHtml(this.settings.allowed_extensions || '')}" class="w-full p-2 border border-gray-300 rounded-lg text-xs focus:ring-emerald-500 focus:border-emerald-500 outline-none" placeholder="pdf, docx, xlsx, png, mp4">
-            <span class="text-[10px] text-gray-400 mt-1 block">ตัวอย่างนามสกุลสื่อมีเดียที่ระบบแนะนำ: pdf, doc, docx, xls, xlsx, png, jpg, jpeg, gif, webp, mp4, webm, mp3, wav, ogg</span>
+            <label class="block text-xs font-bold text-gray-600">นามสกุลไฟล์ที่ได้รับอนุญาต</label>
+            <div id="settings-extensions-select"></div>
+            <input type="hidden" name="allowed_extensions" id="settings-extensions-value" value="${this.settings.allowed_extensions || 'pdf'}">
           </div>
 
           <!-- Save Button -->
           <div class="pt-3">
-            <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow hover:shadow-md transition cursor-pointer">
+            <button type="submit" id="settings-save-btn" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow hover:shadow-md transition cursor-pointer">
               <i class="fa-solid fa-floppy-disk mr-1.5"></i> บันทึกการตั้งค่า
             </button>
           </div>
@@ -2548,13 +2586,169 @@ class FileManager {
       </div>
     `;
 
+    // Initialize SmartSelect on Date Format
+    this.dateFormatSelect = new SmartSelect('settings-date-format-select', [
+      { value: 'be', label: 'พุทธศักราช (ปี พ.ศ.)' },
+      { value: 'ce', label: 'คริสต์ศักราช (ปี ค.ศ.)' }
+    ], {
+      multiple: false,
+      selected: isSystemMode ? SYSTEM_DEFAULTS.date_format : (this.settings.date_format || 'be'),
+      onSelectionChange: (val) => {
+        const v = val[0] || 'be';
+        const el = document.getElementById('settings-date-format-value');
+        if (el) el.value = v;
+      }
+    });
+
+    // Initialize SmartSelect on Storage Type
+    this.defaultStorageSelect = new SmartSelect('settings-storage-type-select', [
+      { value: 'database', label: 'จัดเก็บในฐานข้อมูล (DB Storage)' },
+      { value: 'physical', label: 'จัดเก็บบนดิสก์เซิร์ฟเวอร์ (Physical Storage)' }
+    ], {
+      multiple: false,
+      selected: isSystemMode ? SYSTEM_DEFAULTS.default_storage_type : (this.settings.default_storage_type || 'database'),
+      onSelectionChange: (val) => {
+        const v = val[0] || 'database';
+        const el = document.getElementById('settings-storage-type-value');
+        if (el) el.value = v;
+      }
+    });
+
+    // Initialize SmartSelect on Allowed Extensions in Tags mode
+    const initialExts = (isSystemMode ? SYSTEM_DEFAULTS.allowed_extensions : (this.settings.allowed_extensions || 'pdf'))
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    this.allowedExtensionsSelect = new SmartSelect('settings-extensions-select', [], {
+      mode: 'tags',
+      multiple: true,
+      placeholder: 'พิมพ์นามสกุลไฟล์แล้วกด Enter...',
+      selected: initialExts,
+      onSelectionChange: (val) => {
+        const v = val.join(',');
+        const el = document.getElementById('settings-extensions-value');
+        if (el) el.value = v;
+      }
+    });
+
+    // Toggle Settings Mode Switch handler
+    const modeToggle = document.getElementById('fm-settings-mode-toggle');
+    const modeLabel = document.getElementById('fm-settings-mode-label');
+
+    const toggleSettingsMode = (isSys) => {
+      modeLabel.textContent = isSys ? 'ใช้ค่าเริ่มต้นจากระบบ (System Defaults)' : 'ตั้งค่าใช้งานเอง (Custom Configuration)';
+      
+      const form = document.getElementById('fm-settings-form');
+      if (!form) return;
+
+      const textAndNumberInputs = form.querySelectorAll('input[name][type="text"]:not(#fm-settings-mode-toggle), input[name][type="number"]');
+
+      if (isSys) {
+        // Save current custom state
+        textAndNumberInputs.forEach(input => {
+          this.customSettings[input.name] = input.value;
+        });
+        if (this.allowedExtensionsSelect) {
+          this.customSettings.allowed_extensions = this.allowedExtensionsSelect.getValues().join(',');
+        }
+
+        // Apply System Defaults
+        textAndNumberInputs.forEach(input => {
+          input.value = SYSTEM_DEFAULTS[input.name];
+          input.disabled = true;
+          input.classList.add('bg-slate-50', 'cursor-not-allowed');
+        });
+
+        // Set value and disable SmartSelects
+        if (this.dateFormatSelect) {
+          this.dateFormatSelect.setValues(SYSTEM_DEFAULTS.date_format);
+          this.dateFormatSelect.setDisabled(true);
+        }
+        if (this.defaultStorageSelect) {
+          this.defaultStorageSelect.setValues(SYSTEM_DEFAULTS.default_storage_type);
+          this.defaultStorageSelect.setDisabled(true);
+        }
+        if (this.allowedExtensionsSelect) {
+          const exts = SYSTEM_DEFAULTS.allowed_extensions.split(',').map(s => s.trim()).filter(Boolean);
+          this.allowedExtensionsSelect.setValues(exts);
+          this.allowedExtensionsSelect.setDisabled(true);
+        }
+
+        // Set hidden inputs too
+        const dfVal = document.getElementById('settings-date-format-value');
+        if (dfVal) dfVal.value = SYSTEM_DEFAULTS.date_format;
+        const stVal = document.getElementById('settings-storage-type-value');
+        if (stVal) stVal.value = SYSTEM_DEFAULTS.default_storage_type;
+        const extVal = document.getElementById('settings-extensions-value');
+        if (extVal) extVal.value = SYSTEM_DEFAULTS.allowed_extensions;
+
+      } else {
+        // Restore Custom values
+        textAndNumberInputs.forEach(input => {
+          input.value = this.customSettings[input.name] !== undefined ? this.customSettings[input.name] : SYSTEM_DEFAULTS[input.name];
+          input.disabled = false;
+          input.classList.remove('bg-slate-50', 'cursor-not-allowed');
+        });
+
+        // Restore value and enable SmartSelects
+        if (this.dateFormatSelect) {
+          const val = this.customSettings.date_format !== undefined ? this.customSettings.date_format : SYSTEM_DEFAULTS.date_format;
+          this.dateFormatSelect.setValues(val);
+          this.dateFormatSelect.setDisabled(false);
+          const el = document.getElementById('settings-date-format-value');
+          if (el) el.value = val;
+        }
+        if (this.defaultStorageSelect) {
+          const val = this.customSettings.default_storage_type !== undefined ? this.customSettings.default_storage_type : SYSTEM_DEFAULTS.default_storage_type;
+          this.defaultStorageSelect.setValues(val);
+          this.defaultStorageSelect.setDisabled(false);
+          const el = document.getElementById('settings-storage-type-value');
+          if (el) el.value = val;
+        }
+        if (this.allowedExtensionsSelect) {
+          const val = this.customSettings.allowed_extensions !== undefined ? this.customSettings.allowed_extensions : SYSTEM_DEFAULTS.allowed_extensions;
+          const exts = val.split(',').map(s => s.trim()).filter(Boolean);
+          this.allowedExtensionsSelect.setValues(exts);
+          this.allowedExtensionsSelect.setDisabled(false);
+          const el = document.getElementById('settings-extensions-value');
+          if (el) el.value = val;
+        }
+      }
+    };
+
+    if (modeToggle) {
+      modeToggle.addEventListener('change', function() {
+        toggleSettingsMode(this.checked);
+      });
+    }
+
+    // Call initially to ensure UI disabled state matches settings mode on load
+    toggleSettingsMode(isSystemMode);
+
     const form = document.getElementById('fm-settings-form');
     if (form) {
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         try {
+          // Temporarily enable elements to let FormData pick up values
+          const disabledInputs = form.querySelectorAll('input:disabled, select:disabled');
+          disabledInputs.forEach(i => i.disabled = false);
+
           const formData = new FormData(form);
+
+          // Force set settings_mode explicitly in formData to ensure it's saved correctly
+          const currentSysMode = document.getElementById('fm-settings-mode-toggle').checked;
+          formData.set('settings_mode', currentSysMode ? 'system' : 'custom');
+
+          // Restore disabled state immediately after FormData read
+          if (currentSysMode) {
+            disabledInputs.forEach(i => {
+              if (i.id !== 'fm-settings-mode-toggle') i.disabled = true;
+            });
+          }
+
           formData.append(this.getCsrfName(), this.getCsrfHash());
 
           const response = await fetch('/admin/settings/save', {
@@ -2564,9 +2758,12 @@ class FileManager {
           const data = await response.json();
 
           if (data.status === 'success') {
-            showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว!', 'success');
+            showToast('บันทึกการตั้งค่าระบบเรียบร้อยแล้ว! กำลังรีโหลดหน้าเว็บ...', 'success');
 
             this.fetchData();
+            setTimeout(() => {
+              window.location.reload();
+            }, 1500);
           } else {
             throw new Error(data.message || 'Error saving settings');
           }

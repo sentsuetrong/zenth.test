@@ -15,7 +15,9 @@ class LawsController extends BaseController
     public function index()
     {
         // Update metadata for this specific module
-        $this->data['system_name'] = 'คลังข้อมูลกฎหมายและระเบียบกระทรวงสาธารณสุข';
+        if (empty($this->data['system_name'])) {
+            $this->data['system_name'] = 'คลังข้อมูลกฎหมายและระเบียบกระทรวงสาธารณสุข';
+        }
         $this->data['system_name_en'] = 'Public Health Laws Database';
 
         $lawModel = new LawModel();

@@ -103,9 +103,9 @@
           <!-- Storage Option Toggle integrated here -->
           <div class="flex items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 select-none">
             <label class="relative inline-flex items-center cursor-pointer">
-              <input type="checkbox" id="fm-storage-toggle" class="sr-only peer" checked>
+              <input type="checkbox" id="fm-storage-toggle" class="sr-only peer" <?= ($default_storage_type ?? 'database') === 'database' ? 'checked' : '' ?>>
               <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
-              <span class="ml-2 text-xs font-semibold text-gray-700" id="fm-storage-label">จัดเก็บลงฐานข้อมูล (DB Storage)</span>
+              <span class="ml-2 text-xs font-semibold text-gray-700" id="fm-storage-label"><?= ($default_storage_type ?? 'database') === 'database' ? 'จัดเก็บลงฐานข้อมูล (DB Storage)' : 'จัดเก็บทางกายภาพบนเซิร์ฟเวอร์ (Physical Storage)' ?></span>
             </label>
           </div>
         </div>
@@ -118,7 +118,7 @@
           </div>
           <div>
             <p class="text-xs font-semibold text-gray-800">ลากไฟล์มาวางที่นี่ หรือคลิกเพื่ออัปโหลด</p>
-            <p class="text-[10px] text-gray-450 mt-0.5" id="fm-upload-hint">รองรับขนาดไฟล์อัปโหลดสูงสุด 10MB ต่อชิ้นส่วน (Chunk Size: 512KB)</p>
+            <p class="text-[10px] text-gray-450 mt-0.5" id="fm-upload-hint">รองรับขนาดไฟล์สูงสุดต่อไฟล์ <?= esc($max_file_size ?? '10') ?>MB (แบ่งชิ้นส่วนชิ้นละ <?= esc($chunk_size ?? '512') ?>KB) | นามสกุลไฟล์ที่อนุญาต: <?= esc($allowed_extensions ?? 'pdf') ?></p>
           </div>
         </div>
       </div>
@@ -246,10 +246,11 @@
       method: "post",
       paramName: "file",
       acceptedFiles: "<?= esc($allowed_extensions_list ?? '.pdf') ?>",
-      maxFilesize: 20480, // Limit Frontend (เช่น 20GB)
+      maxFilesize: <?= (int)($max_file_size ?? 10) ?>, // Dynamic from settings (MB)
       chunking: true,
       forceChunking: true,
-      chunkSize: 512 * 1024, // 512KB chunks for shared hosting DB limit safety
+      chunkSize: <?= (int)($chunk_size ?? 512) ?> * 1024, // Dynamic from settings (bytes)
+      maxFiles: <?= (int)($max_multiple_upload ?? 10) ?>, // Dynamic from settings
       parallelChunkUploads: false,
       retryChunks: true,
       retryChunksLimit: 3,

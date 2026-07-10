@@ -25,6 +25,7 @@ class SmartSelect {
       fetchData: null,
       onSelectionChange: null,
       batchSize: 50, // จำนวนรายการที่จะ Render ต่อรอบ (Lazy Load)
+      mode: 'select', // 'select' or 'tags'
       ...config,
     }
     this.selectedValues = []
@@ -33,6 +34,7 @@ class SmartSelect {
     this.isLoading = false
     this.hasError = false
     this.hasInitialSelectionProcessed = false
+    this.focusedChipIndex = -1 // สำหรับเลื่อนโฟกัส Chip ด้วยแป้นพิมพ์
 
     // ตัวแปรสำหรับ Lazy Rendering
     this.renderedCount = 0
@@ -65,6 +67,11 @@ class SmartSelect {
   init() {
     this.render()
     this.cache()
+
+    if (this.config.mode === 'tags') {
+      if (this.chevron) this.chevron.classList.add('hidden')
+      if (this.dropdown) this.dropdown.classList.add('hidden')
+    }
 
     if (this.config.fetchData) {
       this.loadData()
@@ -120,7 +127,7 @@ class SmartSelect {
     this.isLoading = loading
     if (loading) {
       this.loadingIndicator.classList.remove('hidden')
-      this.chevron.classList.add('hidden')
+      if (this.chevron) this.chevron.classList.add('hidden')
       this.wrapper.classList.add(
         'bg-slate-50',
         'opacity-75',
@@ -133,7 +140,7 @@ class SmartSelect {
       this.errorMsg.classList.add('hidden')
     } else {
       this.loadingIndicator.classList.add('hidden')
-      this.chevron.classList.remove('hidden')
+      if (this.chevron && this.config.mode !== 'tags') this.chevron.classList.remove('hidden')
       this.wrapper.classList.remove(
         'bg-slate-50',
         'opacity-75',
@@ -168,6 +175,16 @@ class SmartSelect {
     }
 
     const raw = Array.isArray(init) ? init : [init]
+    
+    if (this.config.mode === 'tags') {
+      raw.forEach(val => {
+        const strVal = String(val).trim();
+        if (strVal && !this.options.some(o => String(o.value) === strVal)) {
+          this.options.push({ value: strVal, label: strVal, _searchStr: strVal.toLowerCase() });
+        }
+      });
+    }
+
     const validValues = this.options.map((o) => String(o.value))
     const filtered = raw
       .map((v) => String(v))
@@ -183,6 +200,7 @@ class SmartSelect {
   }
 
   render() {
+    const showChevron = this.config.mode !== 'tags';
     this.container.innerHTML = `
       <div class="smart-select-root relative w-full group">
         <div class="input-wrapper min-h-12 w-full flex items-center px-3 py-2 bg-white border border-slate-200 rounded-lg shadow-sm focus-within:ring-2 focus-within:ring-emerald-100 focus-within:border-emerald-500 transition-all duration-200 cursor-text" id="${this.container.id}-wrapper">
@@ -194,7 +212,7 @@ class SmartSelect {
             <span class="loading-indicator hidden text-emerald-500 animate-spin">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
             </span>
-            <i class="fa-solid fa-chevron-down chevron-icon text-slate-400 text-xs transition-transform duration-300"></i>
+            ${showChevron ? '<i class="fa-solid fa-chevron-down chevron-icon text-slate-400 text-xs transition-transform duration-300"></i>' : ''}
           </div>
         </div>
         <div class="dropdown-menu hidden opacity-0 translate-y-2 absolute z-50 w-full mt-2 bg-white border border-slate-100 rounded-lg shadow-xl overflow-hidden ring-1 ring-black/5 origin-top transition-all duration-200 ease-out">
@@ -241,24 +259,43 @@ class SmartSelect {
       if (e.target.closest('.fa-xmark')) return
       if (e.target !== this.input) {
         this.input.focus()
-        this.toggleDropdown(true)
+        if (this.config.mode !== 'tags') {
+          this.toggleDropdown(true)
+        }
+      }
+      if (this.config.mode === 'tags') {
+        if (this.focusedChipIndex !== -1) {
+          this.focusedChipIndex = -1
+          this.updateChipHighlightUI()
+        }
       }
     })
 
     this.input.addEventListener('input', (e) => {
-      this.toggleDropdown(true)
-      // ใช้ Debounce เมื่อผู้ใช้พิมพ์ เพื่อประหยัดการทำงาน CPU
-      this.debouncedFilter(e.target.value)
+      if (this.config.mode !== 'tags') {
+        this.toggleDropdown(true)
+        // ใช้ Debounce เมื่อผู้ใช้พิมพ์ เพื่อประหยัดการทำงาน CPU
+        this.debouncedFilter(e.target.value)
+      }
       this.adjustInputWidth()
     })
     this.input.addEventListener('focus', () => {
-      if (!this.isLoading) this.toggleDropdown(true)
+      if (!this.isLoading && this.config.mode !== 'tags') this.toggleDropdown(true)
     })
 
     this.input.addEventListener('keydown', (e) => this.handleKeyDown(e))
 
     document.addEventListener('click', (e) => {
-      if (!this.root.contains(e.target)) this.toggleDropdown(false)
+      if (!this.root.contains(e.target)) {
+        if (this.config.mode !== 'tags') {
+          this.toggleDropdown(false)
+        } else {
+          if (this.focusedChipIndex !== -1) {
+            this.focusedChipIndex = -1
+            this.updateChipHighlightUI()
+          }
+        }
+      }
     })
 
     this.optionsList.addEventListener('click', (e) => {
@@ -313,6 +350,7 @@ class SmartSelect {
   }
 
   toggleDropdown(show) {
+    if (this.config.mode === 'tags') return
     if (this.isLoading && show) return
 
     if (show) {
@@ -582,9 +620,9 @@ class SmartSelect {
   createChipElement(opt, val) {
     const chip = document.createElement('div')
     chip.dataset.value = val
-    chip.className = `chip chip-enter flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-emerald-50 text-emerald-700 rounded-sm text-xs border border-emerald-100 select-none whitespace-nowrap transition-all`
+    chip.className = `chip chip-enter flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 bg-emerald-50 text-emerald-700 rounded-sm text-xs border border-emerald-100 select-none whitespace-nowrap transition-all cursor-pointer`
     chip.innerHTML = `
-          <span>${opt.label}</span>
+          <span class="chip-text">${opt.label}</span>
           <div class="hover:bg-emerald-200/50 rounded-sm p-0.5 cursor-pointer transition-colors flex items-center justify-center w-4 h-4">
               <i class="fa-solid fa-xmark text-[10px]"></i>
           </div>`
@@ -594,11 +632,190 @@ class SmartSelect {
       this.removeValue(val)
       this.input.focus()
     })
+
+    chip.addEventListener('click', (e) => {
+      if (e.target.closest('div.hover\\:bg-emerald-200\\/50') || e.target.closest('.fa-xmark')) {
+        return;
+      }
+      if (this.config.mode === 'tags') {
+        e.stopPropagation();
+        this.unwrapChip(val);
+      }
+    });
+
     return chip
+  }
+
+  unwrapChip(val) {
+    this.selectedValues = this.selectedValues.filter(v => v !== val);
+    this.input.value = val;
+    this.focusedChipIndex = -1;
+    this.updateUI();
+    this.triggerChange();
+    this.input.focus();
+    this.adjustInputWidth();
+  }
+
+  updateChipHighlightUI() {
+    const chips = Array.from(this.inputContent.querySelectorAll('.chip'));
+    chips.forEach((chip, idx) => {
+      if (idx === this.focusedChipIndex) {
+        chip.classList.add('ring-2', 'ring-emerald-500', 'ring-offset-1');
+      } else {
+        chip.classList.remove('ring-2', 'ring-emerald-500', 'ring-offset-1');
+      }
+    });
+  }
+
+  addTag(val) {
+    val = val.trim();
+    if (!val) return;
+    
+    // Prevent duplicate tags
+    if (!this.selectedValues.includes(val)) {
+      this.selectedValues.push(val);
+      if (!this.options.some(o => String(o.value) === val)) {
+        this.options.push({ value: val, label: val, _searchStr: val.toLowerCase() });
+      }
+    }
+    this.input.value = '';
+    this.focusedChipIndex = -1;
+    this.updateUI();
+    this.triggerChange();
+    this.adjustInputWidth();
+  }
+
+  setValues(values) {
+    const raw = Array.isArray(values) ? values : [values];
+    if (this.config.mode === 'tags') {
+      this.options = [];
+      raw.forEach(val => {
+        const strVal = String(val).trim();
+        if (strVal) {
+          this.options.push({ value: strVal, label: strVal, _searchStr: strVal.toLowerCase() });
+        }
+      });
+    }
+    this.selectedValues = raw.map(v => String(v));
+    this.focusedChipIndex = -1;
+    this.updateUI();
+    if (this.config.mode !== 'tags') {
+      this.resetRender();
+    }
+    this.adjustInputWidth();
+  }
+
+  setDisabled(disabled) {
+    if (disabled) {
+      this.wrapper.classList.add(
+        'bg-slate-50',
+        'opacity-75',
+        'cursor-not-allowed',
+        'pointer-events-none',
+      )
+      this.input.classList.add('cursor-not-allowed')
+      this.input.disabled = true
+      if (this.config.mode !== 'tags') {
+        this.toggleDropdown(false)
+      }
+    } else {
+      this.wrapper.classList.remove(
+        'bg-slate-50',
+        'opacity-75',
+        'cursor-not-allowed',
+        'pointer-events-none',
+      )
+      this.input.classList.remove('cursor-not-allowed')
+      this.input.disabled = false
+    }
   }
 
   handleKeyDown(e) {
     if (this.isLoading) return
+
+    if (this.config.mode === 'tags') {
+      const maxChipIdx = this.selectedValues.length - 1;
+      
+      // If typing any character and a chip is focused, return focus to input
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (this.focusedChipIndex !== -1) {
+          this.focusedChipIndex = -1;
+          this.updateChipHighlightUI();
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case 'Enter':
+          e.preventDefault();
+          if (this.focusedChipIndex !== -1) {
+            const val = this.selectedValues[this.focusedChipIndex];
+            this.unwrapChip(val);
+          } else {
+            const val = this.input.value.trim();
+            if (val) {
+              this.addTag(val);
+            }
+          }
+          break;
+
+        case 'ArrowLeft':
+          if (this.input.value === '' && this.selectedValues.length > 0) {
+            e.preventDefault();
+            if (this.focusedChipIndex === -1) {
+              this.focusedChipIndex = maxChipIdx;
+            } else {
+              this.focusedChipIndex = Math.max(0, this.focusedChipIndex - 1);
+            }
+            this.updateChipHighlightUI();
+          }
+          break;
+
+        case 'ArrowRight':
+          if (this.focusedChipIndex !== -1) {
+            e.preventDefault();
+            if (this.focusedChipIndex === maxChipIdx) {
+              this.focusedChipIndex = -1;
+              this.input.focus();
+            } else {
+              this.focusedChipIndex = this.focusedChipIndex + 1;
+            }
+            this.updateChipHighlightUI();
+          }
+          break;
+
+        case 'Backspace':
+          if (this.input.value === '' && this.selectedValues.length > 0) {
+            e.preventDefault();
+            if (this.focusedChipIndex === -1) {
+              const val = this.selectedValues[maxChipIdx];
+              this.unwrapChip(val);
+            } else {
+              const val = this.selectedValues[this.focusedChipIndex];
+              this.unwrapChip(val);
+            }
+          }
+          break;
+
+        case 'Delete':
+          if (this.focusedChipIndex !== -1) {
+            e.preventDefault();
+            const val = this.selectedValues[this.focusedChipIndex];
+            this.unwrapChip(val);
+          }
+          break;
+
+        case 'Escape':
+          if (this.focusedChipIndex !== -1) {
+            this.focusedChipIndex = -1;
+            this.updateChipHighlightUI();
+          }
+          this.input.blur();
+          break;
+      }
+      return;
+    }
+
     const maxIndex = this.filteredOptions.length - 1
     switch (e.key) {
       case 'ArrowDown':

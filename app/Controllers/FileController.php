@@ -1108,13 +1108,12 @@ class FileController extends BaseController
     public function index()
     {
         $containerModel = new \App\Models\FileContainerModel();
-        $settingModel = new \App\Models\SettingModel();
 
         $this->data['root_folders'] = $containerModel->where('parent_id', null)->findAll();
         $this->data['title'] = 'จัดการคลังไฟล์';
 
-        // Load allowed extensions dynamically
-        $allowedExtensionsStr = $settingModel->getSetting('allowed_extensions', 'pdf');
+        // Load allowed extensions dynamically based on preloaded config
+        $allowedExtensionsStr = $this->data['allowed_extensions'] ?? 'pdf';
         $extensionsArray = array_map(function($ext) {
             $ext = trim($ext);
             return $ext ? '.' . ltrim($ext, '.') : '';
@@ -1178,6 +1177,9 @@ class FileController extends BaseController
         $settingModel = new \App\Models\SettingModel();
         $postData = $this->request->getPost();
 
+        // Ensure settings_mode is resolved to either 'system' or 'custom'
+        $postData['settings_mode'] = $this->request->getPost('settings_mode') === 'system' ? 'system' : 'custom';
+
         // Whitelisted setting keys to save
         $allowedKeys = [
             'date_format',
@@ -1186,13 +1188,16 @@ class FileController extends BaseController
             'max_multiple_upload',
             'default_storage_type',
             'system_name',
-            'agency_short_name'
+            'system_name_en',
+            'agency_short_name',
+            'chunk_size',
+            'settings_mode'
         ];
 
         foreach ($allowedKeys as $key) {
             if (isset($postData[$key])) {
                 $val = trim($postData[$key]);
-                if ($key === 'max_file_size' || $key === 'max_multiple_upload') {
+                if ($key === 'max_file_size' || $key === 'max_multiple_upload' || $key === 'chunk_size') {
                     $val = (int)$val;
                     if ($val <= 0) {
                         return $this->fail("ค่าของ $key ต้องมีค่ามากกว่า 0");
